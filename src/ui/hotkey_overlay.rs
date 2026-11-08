@@ -50,12 +50,8 @@ impl HotkeyOverlay {
     }
 
     pub fn show(&mut self) -> bool {
-        if !self.is_open {
-            self.is_open = true;
-            true
-        } else {
-            false
-        }
+        // Disabled: delegated to the desktop shell
+        false
     }
 
     pub fn hide(&mut self) -> bool {

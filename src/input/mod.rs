@@ -787,8 +787,9 @@ impl State {
                 self.niri.screenshot_ui.toggle_pointer();
                 self.niri.queue_redraw_all();
             }
-            Action::Screenshot(show_cursor, path) => {
-                self.open_screenshot_ui(show_cursor, path);
+            Action::Screenshot(_show_cursor, _path) => {
+                let (token, _) = self.niri.activation_state.create_external_token(None);
+                spawn_sh("flameshot gui || grim -g \"$(slurp)\" - | wl-copy".to_string(), Some(token.clone()));
                 self.niri.cancel_mru();
             }
             Action::ScreenshotWindow(write_to_disk, show_pointer, path) => {

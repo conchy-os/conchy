@@ -2196,42 +2196,11 @@ impl<W: LayoutElement> ScrollingSpace<W> {
     }
 
     pub fn toggle_column_tabbed_display(&mut self) {
-        if self.columns.is_empty() {
-            return;
-        }
-
-        let col = &mut self.columns[self.active_column_idx];
-        let display = match col.display_mode {
-            ColumnDisplay::Normal => ColumnDisplay::Tabbed,
-            ColumnDisplay::Tabbed => ColumnDisplay::Normal,
-        };
-
-        self.set_column_display(display);
+        // Tabbed display mode disabled in favor of pure scrolling columns
     }
 
-    pub fn set_column_display(&mut self, display: ColumnDisplay) {
-        if self.columns.is_empty() {
-            return;
-        }
-
-        let col = &mut self.columns[self.active_column_idx];
-        if col.display_mode == display {
-            return;
-        }
-
-        cancel_resize_for_column(&mut self.interactive_resize, col);
-        col.set_column_display(display);
-
-        // With place_within_column, the tab indicator changes the column size immediately.
-        self.data[self.active_column_idx].update(col);
-        col.update_tile_sizes(true);
-
-        // Disable fullscreen if needed.
-        if col.display_mode != ColumnDisplay::Tabbed && col.tiles.len() > 1 {
-            let window = col.tiles[col.active_tile_idx].window().id().clone();
-            self.set_fullscreen(&window, false);
-            self.set_maximized(&window, false);
-        }
+    pub fn set_column_display(&mut self, _display: ColumnDisplay) {
+        // Enforce normal display mode
     }
 
     pub fn center_column(&mut self) {
@@ -5276,6 +5245,7 @@ impl<W: LayoutElement> Column<W> {
         self.update_tile_sizes(true);
     }
 
+    #[allow(dead_code)]
     fn set_column_display(&mut self, display: ColumnDisplay) {
         if self.display_mode == display {
             return;
