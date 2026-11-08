@@ -27,6 +27,7 @@ use niri::utils::spawning::{
 use niri::utils::{cause_panic, version, watcher, xwayland, IS_SYSTEMD_SERVICE};
 use niri_config::{Config, ConfigPath};
 use niri_ipc::socket::SOCKET_PATH_ENV;
+#[cfg(feature = "systemd")]
 use sd_notify::NotifyState;
 use smithay::reexports::wayland_server::Display;
 use tracing_subscriber::EnvFilter;
@@ -243,6 +244,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if env::var_os("NIRI_DISABLE_SYSTEM_MANAGER_NOTIFY").is_none_or(|x| x != "1") {
+        #[cfg(feature = "systemd")]
         // Notify systemd we're ready.
         if let Err(err) = sd_notify::notify(&[NotifyState::Ready]) {
             warn!("error notifying systemd: {err:?}");
