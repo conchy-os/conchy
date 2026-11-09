@@ -5,7 +5,7 @@ use knuffel::decode::Context;
 use knuffel::errors::DecodeError;
 use knuffel::traits::ErrorSpan;
 use knuffel::Decode;
-use niri_ipc::{ConfiguredMode, HSyncPolarity, Transform, VSyncPolarity};
+use conchy_ipc::{ConfiguredMode, HSyncPolarity, Transform, VSyncPolarity};
 
 use crate::gestures::HotCorners;
 use crate::{Color, FloatOrInt, LayoutPart};
@@ -42,9 +42,9 @@ pub struct Modeline {
     /// Total vertical number of pixels before resetting the vertical drawing position to zero.
     pub vtotal: u16,
     /// Horizontal sync polarity: "+hsync" or "-hsync".
-    pub hsync_polarity: niri_ipc::HSyncPolarity,
+    pub hsync_polarity: conchy_ipc::HSyncPolarity,
     /// Vertical sync polarity: "+vsync" or "-vsync".
-    pub vsync_polarity: niri_ipc::VSyncPolarity,
+    pub vsync_polarity: conchy_ipc::VSyncPolarity,
 }
 
 #[derive(knuffel::Decode, Debug, Clone, PartialEq)]
@@ -138,7 +138,7 @@ pub struct Position {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct MaxBpc(pub niri_ipc::MaxBpc);
+pub struct MaxBpc(pub conchy_ipc::MaxBpc);
 
 #[derive(knuffel::Decode, Debug, Clone, PartialEq, Default)]
 pub struct Vrr {
@@ -288,7 +288,7 @@ impl Outputs {
 }
 
 impl OutputName {
-    pub fn from_ipc_output(output: &niri_ipc::Output) -> Self {
+    pub fn from_ipc_output(output: &conchy_ipc::Output) -> Self {
         Self {
             connector: output.name.clone(),
             make: (output.make != "Unknown").then(|| output.make.clone()),
@@ -414,7 +414,7 @@ impl<S: ErrorSpan> knuffel::DecodeScalar<S> for MaxBpc {
     ) -> Result<Self, DecodeError<S>> {
         match &**value {
             knuffel::ast::Literal::Int(ref val) => match u8::try_from(val) {
-                Ok(v) => niri_ipc::MaxBpc::try_from(v)
+                Ok(v) => conchy_ipc::MaxBpc::try_from(v)
                     .map(MaxBpc)
                     .map_err(|e| DecodeError::conversion(value, e)),
                 Err(e) => {

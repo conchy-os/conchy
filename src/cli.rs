@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 use clap_complete::Shell;
-use niri_ipc::{Action, OutputAction};
+use conchy_ipc::{Action, OutputAction};
 
 use crate::utils::version;
 
@@ -13,9 +13,9 @@ use crate::utils::version;
 #[command(subcommand_value_name = "SUBCOMMAND")]
 #[command(subcommand_help_heading = "Subcommands")]
 pub struct Cli {
-    /// Path to config file (default: `$XDG_CONFIG_HOME/niri/config.kdl`).
+    /// Path to config file (default: `$XDG_CONFIG_HOME/conchy/wm.kdl`).
     ///
-    /// This can also be set with the `NIRI_CONFIG` environment variable. If both are set, the
+    /// This can also be set with the `CONCHY_CONFIG` environment variable. If both are set, the
     /// command line argument takes precedence.
     #[arg(short, long)]
     pub config: Option<PathBuf>,
@@ -36,7 +36,7 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Sub {
-    /// Communicate with the running niri instance.
+    /// Communicate with the running conchy instance.
     Msg {
         #[command(subcommand)]
         msg: Msg,
@@ -49,9 +49,9 @@ pub enum Sub {
     },
     /// Validate the config file.
     Validate {
-        /// Path to config file (default: `$XDG_CONFIG_HOME/niri/config.kdl`).
+        /// Path to config file (default: `$XDG_CONFIG_HOME/conchy/wm.kdl`).
         ///
-        /// This can also be set with the `NIRI_CONFIG` environment variable. If both are set, the
+        /// This can also be set with the `CONCHY_CONFIG` environment variable. If both are set, the
         /// command line argument takes precedence.
         #[arg(short, long)]
         config: Option<PathBuf>,

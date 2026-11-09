@@ -5,8 +5,8 @@ use std::{env, slice};
 
 use anyhow::{anyhow, bail, Context};
 use niri_config::OutputName;
-use niri_ipc::socket::Socket;
-use niri_ipc::{
+use conchy_ipc::socket::Socket;
+use conchy_ipc::{
     Action, Cast, CastKind, CastTarget, Event, KeyboardLayouts, LogicalOutput, Mode, Output,
     OutputConfigChanged, Overview, Request, Response, Transform, Window, WindowLayout,
 };
@@ -234,19 +234,19 @@ pub fn handle_msg(mut msg: Msg, json: bool, print_request: bool) -> anyhow::Resu
             });
             let mut iter = layers.iter().peekable();
 
-            let print = |surface: &niri_ipc::LayerSurface| {
+            let print = |surface: &conchy_ipc::LayerSurface| {
                 println!("    Surface:");
                 println!("      Namespace: \"{}\"", surface.namespace);
 
                 let interactivity = match surface.keyboard_interactivity {
-                    niri_ipc::LayerSurfaceKeyboardInteractivity::None => "none",
-                    niri_ipc::LayerSurfaceKeyboardInteractivity::Exclusive => "exclusive",
-                    niri_ipc::LayerSurfaceKeyboardInteractivity::OnDemand => "on-demand",
+                    conchy_ipc::LayerSurfaceKeyboardInteractivity::None => "none",
+                    conchy_ipc::LayerSurfaceKeyboardInteractivity::Exclusive => "exclusive",
+                    conchy_ipc::LayerSurfaceKeyboardInteractivity::OnDemand => "on-demand",
                 };
                 println!("      Keyboard interactivity: {interactivity}");
             };
 
-            let print_layer = |iter: &mut Peekable<slice::Iter<niri_ipc::LayerSurface>>,
+            let print_layer = |iter: &mut Peekable<slice::Iter<conchy_ipc::LayerSurface>>,
                                output: &str,
                                layer| {
                 let mut empty = true;
@@ -267,16 +267,16 @@ pub fn handle_msg(mut msg: Msg, json: bool, print_request: bool) -> anyhow::Resu
                 println!("Output \"{output}\":");
 
                 print!("  Background layer:");
-                print_layer(&mut iter, output, niri_ipc::Layer::Background);
+                print_layer(&mut iter, output, conchy_ipc::Layer::Background);
 
                 print!("  Bottom layer:");
-                print_layer(&mut iter, output, niri_ipc::Layer::Bottom);
+                print_layer(&mut iter, output, conchy_ipc::Layer::Bottom);
 
                 print!("  Top layer:");
-                print_layer(&mut iter, output, niri_ipc::Layer::Top);
+                print_layer(&mut iter, output, conchy_ipc::Layer::Top);
 
                 print!("  Overlay layer:");
-                print_layer(&mut iter, output, niri_ipc::Layer::Overlay);
+                print_layer(&mut iter, output, conchy_ipc::Layer::Overlay);
             }
         }
         Msg::FocusedOutput => {

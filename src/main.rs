@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate tracing;
 
+use conchy_wm as niri;
+
 use std::fmt::Write as _;
 use std::fs::File;
 use std::io::{self, Write};
@@ -26,7 +28,7 @@ use niri::utils::spawning::{
 };
 use niri::utils::{cause_panic, version, watcher, xwayland, IS_SYSTEMD_SERVICE};
 use niri_config::{Config, ConfigPath};
-use niri_ipc::socket::SOCKET_PATH_ENV;
+use conchy_ipc::socket::SOCKET_PATH_ENV;
 #[cfg(feature = "systemd")]
 use sd_notify::NotifyState;
 use smithay::reexports::wayland_server::Display;
@@ -92,7 +94,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         // Set the current desktop for xdg-desktop-portal.
-        env::set_var("XDG_CURRENT_DESKTOP", "niri");
+        env::set_var("XDG_CURRENT_DESKTOP", "conchy");
         // Ensure the session type is set to Wayland for xdg-autostart and Qt apps.
         env::set_var("XDG_SESSION_TYPE", "wayland");
     }
@@ -122,7 +124,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         clap_complete::generate(
                             Nushell,
                             &mut Cli::command(),
-                            "niri",
+                            "conchy",
                             &mut io::stdout(),
                         );
                     }
@@ -131,7 +133,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         clap_complete::generate(
                             generator,
                             &mut Cli::command(),
-                            "niri",
+                            "conchy",
                             &mut io::stdout(),
                         );
                     }
@@ -144,7 +146,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Needs to be done before starting Tracy, so that it applies to Tracy's threads.
     niri::utils::signals::block_early().unwrap();
 
-    // Avoid starting Tracy for the `niri msg` code path since starting/stopping Tracy is a bit
+    // Avoid starting Tracy for the `conchy msg` code path since starting/stopping Tracy is a bit
     // slow.
     tracy_client::Client::start();
 
@@ -153,11 +155,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // below, because some of those Drop impls themselves create Tracy spans.
     let _shutdown_tracy = ShutdownTracy;
 
-    info!("starting version {}", &version());
+    info!("conchy-wm: starting version {}", &version());
 
     // Load the config.
     let config_path = config_path(cli.config);
-    env::remove_var("NIRI_CONFIG");
+    env::remove_var("CONCHY_CONFIG");
     let (config_created_at, config_load_result) = config_path.load_or_create();
     let config_errored = config_load_result.config.is_err();
     let mut config = config_load_result.config.unwrap_or_else(|err| {
@@ -336,24 +338,24 @@ fn import_environment() {
 }
 
 fn env_config_path() -> Option<PathBuf> {
-    env::var_os("NIRI_CONFIG")
+    env::var_os("CONCHY_CONFIG")
         .filter(|x| !x.is_empty())
         .map(PathBuf::from)
 }
 
 fn default_config_path() -> Option<PathBuf> {
-    let Some(dirs) = ProjectDirs::from("", "", "niri") else {
+    let Some(dirs) = ProjectDirs::from("", "", "conchy") else {
         warn!("error retrieving home directory");
         return None;
     };
 
     let mut path = dirs.config_dir().to_owned();
-    path.push("config.kdl");
+    path.push("wm.kdl");
     Some(path)
 }
 
 fn system_config_path() -> PathBuf {
-    PathBuf::from("/etc/niri/config.kdl")
+    PathBuf::from("/etc/conchy/wm.kdl")
 }
 
 fn config_path(cli_path: Option<PathBuf>) -> ConfigPath {

@@ -208,20 +208,20 @@ pub fn output_size(output: &Output) -> Size<f64, Logical> {
     output_transform.transform_size(logical_size)
 }
 
-pub fn logical_output(output: &Output) -> niri_ipc::LogicalOutput {
+pub fn logical_output(output: &Output) -> conchy_ipc::LogicalOutput {
     let loc = output.current_location();
     let size = output_size(output);
     let transform = match output.current_transform() {
-        Transform::Normal => niri_ipc::Transform::Normal,
-        Transform::_90 => niri_ipc::Transform::_90,
-        Transform::_180 => niri_ipc::Transform::_180,
-        Transform::_270 => niri_ipc::Transform::_270,
-        Transform::Flipped => niri_ipc::Transform::Flipped,
-        Transform::Flipped90 => niri_ipc::Transform::Flipped90,
-        Transform::Flipped180 => niri_ipc::Transform::Flipped180,
-        Transform::Flipped270 => niri_ipc::Transform::Flipped270,
+        Transform::Normal => conchy_ipc::Transform::Normal,
+        Transform::_90 => conchy_ipc::Transform::_90,
+        Transform::_180 => conchy_ipc::Transform::_180,
+        Transform::_270 => conchy_ipc::Transform::_270,
+        Transform::Flipped => conchy_ipc::Transform::Flipped,
+        Transform::Flipped90 => conchy_ipc::Transform::Flipped90,
+        Transform::Flipped180 => conchy_ipc::Transform::Flipped180,
+        Transform::Flipped270 => conchy_ipc::Transform::Flipped270,
     };
-    niri_ipc::LogicalOutput {
+    conchy_ipc::LogicalOutput {
         x: loc.x,
         y: loc.y,
         width: size.w as u32,
@@ -247,16 +247,16 @@ pub fn winit_scale(output: &Output) -> Option<f64> {
     output.user_data().get::<WinitScale>().map(|x| x.0.get())
 }
 
-pub fn ipc_transform_to_smithay(transform: niri_ipc::Transform) -> Transform {
+pub fn ipc_transform_to_smithay(transform: conchy_ipc::Transform) -> Transform {
     match transform {
-        niri_ipc::Transform::Normal => Transform::Normal,
-        niri_ipc::Transform::_90 => Transform::_90,
-        niri_ipc::Transform::_180 => Transform::_180,
-        niri_ipc::Transform::_270 => Transform::_270,
-        niri_ipc::Transform::Flipped => Transform::Flipped,
-        niri_ipc::Transform::Flipped90 => Transform::Flipped90,
-        niri_ipc::Transform::Flipped180 => Transform::Flipped180,
-        niri_ipc::Transform::Flipped270 => Transform::Flipped270,
+        conchy_ipc::Transform::Normal => Transform::Normal,
+        conchy_ipc::Transform::_90 => Transform::_90,
+        conchy_ipc::Transform::_180 => Transform::_180,
+        conchy_ipc::Transform::_270 => Transform::_270,
+        conchy_ipc::Transform::Flipped => Transform::Flipped,
+        conchy_ipc::Transform::Flipped90 => Transform::Flipped90,
+        conchy_ipc::Transform::Flipped180 => Transform::Flipped180,
+        conchy_ipc::Transform::Flipped270 => Transform::Flipped270,
     }
 }
 

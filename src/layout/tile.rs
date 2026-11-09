@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use niri_config::utils::MergeWith as _;
 use niri_config::{Color, CornerRadius, GradientInterpolation};
-use niri_ipc::WindowLayout;
+use conchy_ipc::WindowLayout;
 use smithay::backend::allocator::Fourcc;
 use smithay::backend::renderer::element::{Element, Kind, RenderElement};
 use smithay::utils::{Logical, Point, Rectangle, Scale, Size, Transform};

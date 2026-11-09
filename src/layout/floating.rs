@@ -4,7 +4,7 @@ use std::rc::Rc;
 
 use niri_config::utils::MergeWith as _;
 use niri_config::{PresetSize, RelativeTo};
-use niri_ipc::{PositionChange, SizeChange, WindowLayout};
+use conchy_ipc::{PositionChange, SizeChange, WindowLayout};
 use smithay::backend::renderer::element::RenderElement;
 use smithay::utils::{Logical, Point, Rectangle, Scale, Serial, Size};
 

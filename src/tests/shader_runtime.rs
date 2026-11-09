@@ -14,7 +14,7 @@
 use std::time::Duration;
 
 use niri_config::{Color, Config, CornerRadius, GradientInterpolation};
-use niri_ipc::SizeChange;
+use conchy_ipc::SizeChange;
 use smithay::backend::renderer::element::{Element as _, Kind};
 use smithay::utils::{Physical, Point, Rectangle, Scale, Size};
 use wayland_client::protocol::wl_surface::WlSurface;

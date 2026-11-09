@@ -8,7 +8,7 @@ use std::rc::Rc;
 use anyhow::Context;
 use arrayvec::ArrayVec;
 use niri_config::{Action, Config};
-use niri_ipc::SizeChange;
+use conchy_ipc::SizeChange;
 use pango::{Alignment, FontDescription};
 use pangocairo::cairo::{self, ImageSurface};
 use smithay::backend::allocator::Fourcc;

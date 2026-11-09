@@ -1,10 +1,10 @@
-//! Types for communicating with niri via IPC.
+//! Types for communicating with conchy-wm via IPC.
 //!
-//! After connecting to the niri socket, you can send [`Request`]s. Niri will process them one by
+//! After connecting to the conchy socket, you can send [`Request`]s. Conchy will process them one by
 //! one, in order, and to each request it will respond with a single [`Reply`], which is a `Result`
 //! wrapping a [`Response`].
 //!
-//! If you send a [`Request::EventStream`], niri will *stop* reading subsequent [`Request`]s, and
+//! If you send a [`Request::EventStream`], conchy will *stop* reading subsequent [`Request`]s, and
 //! will start continuously writing compositor [`Event`]s to the socket. If you'd like to read an
 //! event stream and write more requests at the same time, you need to use two IPC sockets.
 //!
@@ -23,25 +23,25 @@
 //! it is a fairly simple helper, so if you need async, or if you're using a different language,
 //! you are encouraged to communicate with the socket manually.
 //!
-//! 1. Read the socket filesystem path from [`socket::SOCKET_PATH_ENV`] (`$NIRI_SOCKET`).
+//! 1. Read the socket filesystem path from [`socket::SOCKET_PATH_ENV`] (`$CONCHY_SOCKET`).
 //! 2. Connect to the socket and write a JSON-formatted [`Request`] on a single line. You can follow
 //!    up with a line break and a flush, or just flush and shutdown the write end of the socket.
-//! 3. Niri will respond with a single line JSON-formatted [`Reply`].
+//! 3. Conchy will respond with a single line JSON-formatted [`Reply`].
 //! 4. You can keep writing [`Request`]s, each on a single line, and read [`Reply`]s, also each on a
 //!    separate line.
-//! 5. After you request an event stream, niri will keep responding with JSON-formatted [`Event`]s,
+//! 5. After you request an event stream, conchy will keep responding with JSON-formatted [`Event`]s,
 //!    on a single line each.
 //!
 //! ## Backwards compatibility
 //!
-//! This crate follows the niri version. It is **not** API-stable in terms of the Rust semver. In
+//! This crate follows the conchy version. It is **not** API-stable in terms of the Rust semver. In
 //! particular, expect new struct fields and enum variants to be added in patch version bumps.
 //!
 //! Use an exact version requirement to avoid breaking changes:
 //!
 //! ```toml
 //! [dependencies]
-//! niri-ipc = "=26.4.0"
+//! conchy-ipc = "=26.4.0"
 //! ```
 //!
 //! ## Features

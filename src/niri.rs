@@ -450,7 +450,7 @@ pub struct Niri {
     pub minimized_strip_buffers: RefCell<HashMap<Output, Vec<SolidColorBuffer>>>,
 
     pub pick_window: Option<async_channel::Sender<Option<MappedId>>>,
-    pub pick_color: Option<async_channel::Sender<Option<niri_ipc::PickedColor>>>,
+    pub pick_color: Option<async_channel::Sender<Option<conchy_ipc::PickedColor>>>,
 
     pub debug_draw_opaque_regions: bool,
     pub debug_draw_damage: bool,
@@ -667,24 +667,24 @@ impl CastTarget {
         matches!(self, CastTarget::Output { output, .. } if output == weak)
     }
 
-    pub fn matches(&self, ipc: &niri_ipc::CastTarget) -> bool {
+    pub fn matches(&self, ipc: &conchy_ipc::CastTarget) -> bool {
         use CastTarget::*;
         match (self, ipc) {
-            (Nothing, niri_ipc::CastTarget::Nothing {}) => true,
-            (Output { name, .. }, niri_ipc::CastTarget::Output { name: ipc_name }) => {
+            (Nothing, conchy_ipc::CastTarget::Nothing {}) => true,
+            (Output { name, .. }, conchy_ipc::CastTarget::Output { name: ipc_name }) => {
                 name == ipc_name
             }
-            (Window { id }, niri_ipc::CastTarget::Window { id: ipc_id }) => id == ipc_id,
+            (Window { id }, conchy_ipc::CastTarget::Window { id: ipc_id }) => id == ipc_id,
             _ => false,
         }
     }
 
-    pub fn make_ipc(&self) -> niri_ipc::CastTarget {
+    pub fn make_ipc(&self) -> conchy_ipc::CastTarget {
         use CastTarget::*;
         match self {
-            Nothing => niri_ipc::CastTarget::Nothing {},
-            Output { name, .. } => niri_ipc::CastTarget::Output { name: name.clone() },
-            Window { id } => niri_ipc::CastTarget::Window { id: *id },
+            Nothing => conchy_ipc::CastTarget::Nothing {},
+            Output { name, .. } => conchy_ipc::CastTarget::Output { name: name.clone() },
+            Window { id } => conchy_ipc::CastTarget::Window { id: *id },
         }
     }
 }
@@ -2233,25 +2233,25 @@ impl State {
         fun(config);
     }
 
-    pub fn apply_transient_output_config(&mut self, name: &str, action: niri_ipc::OutputAction) {
+    pub fn apply_transient_output_config(&mut self, name: &str, action: conchy_ipc::OutputAction) {
         self.modify_output_config(name, move |config| match action {
-            niri_ipc::OutputAction::Off => config.off = true,
-            niri_ipc::OutputAction::On => config.off = false,
-            niri_ipc::OutputAction::Mode { mode } => {
+            conchy_ipc::OutputAction::Off => config.off = true,
+            conchy_ipc::OutputAction::On => config.off = false,
+            conchy_ipc::OutputAction::Mode { mode } => {
                 config.mode = match mode {
-                    niri_ipc::ModeToSet::Automatic => None,
-                    niri_ipc::ModeToSet::Specific(mode) => Some(niri_config::output::Mode {
+                    conchy_ipc::ModeToSet::Automatic => None,
+                    conchy_ipc::ModeToSet::Specific(mode) => Some(niri_config::output::Mode {
                         custom: false,
                         mode,
                     }),
                 };
                 config.modeline = None;
             }
-            niri_ipc::OutputAction::CustomMode { mode } => {
+            conchy_ipc::OutputAction::CustomMode { mode } => {
                 config.mode = Some(niri_config::output::Mode { custom: true, mode });
                 config.modeline = None;
             }
-            niri_ipc::OutputAction::Modeline {
+            conchy_ipc::OutputAction::Modeline {
                 clock,
                 hdisplay,
                 hsync_start,
@@ -2279,23 +2279,23 @@ impl State {
                     vsync_polarity,
                 })
             }
-            niri_ipc::OutputAction::Scale { scale } => {
+            conchy_ipc::OutputAction::Scale { scale } => {
                 config.scale = match scale {
-                    niri_ipc::ScaleToSet::Automatic => None,
-                    niri_ipc::ScaleToSet::Specific(scale) => Some(FloatOrInt(scale)),
+                    conchy_ipc::ScaleToSet::Automatic => None,
+                    conchy_ipc::ScaleToSet::Specific(scale) => Some(FloatOrInt(scale)),
                 }
             }
-            niri_ipc::OutputAction::Transform { transform } => config.transform = transform,
-            niri_ipc::OutputAction::Position { position } => {
+            conchy_ipc::OutputAction::Transform { transform } => config.transform = transform,
+            conchy_ipc::OutputAction::Position { position } => {
                 config.position = match position {
-                    niri_ipc::PositionToSet::Automatic => None,
-                    niri_ipc::PositionToSet::Specific(position) => Some(niri_config::Position {
+                    conchy_ipc::PositionToSet::Automatic => None,
+                    conchy_ipc::PositionToSet::Specific(position) => Some(niri_config::Position {
                         x: position.x,
                         y: position.y,
                     }),
                 }
             }
-            niri_ipc::OutputAction::Vrr { vrr } => {
+            conchy_ipc::OutputAction::Vrr { vrr } => {
                 config.variable_refresh_rate = if vrr.vrr {
                     Some(niri_config::Vrr {
                         on_demand: vrr.on_demand,
@@ -2304,7 +2304,7 @@ impl State {
                     None
                 }
             }
-            niri_ipc::OutputAction::MaxBpc { max_bpc } => config.max_bpc = Some(MaxBpc(max_bpc)),
+            conchy_ipc::OutputAction::MaxBpc { max_bpc } => config.max_bpc = Some(MaxBpc(max_bpc)),
         });
 
         self.reload_output_config();
@@ -2383,7 +2383,7 @@ impl State {
         self.niri.queue_redraw_all();
     }
 
-    pub fn handle_pick_color(&mut self, tx: async_channel::Sender<Option<niri_ipc::PickedColor>>) {
+    pub fn handle_pick_color(&mut self, tx: async_channel::Sender<Option<conchy_ipc::PickedColor>>) {
         let pointer = self.niri.seat.get_pointer().unwrap();
         let start_data = PointerGrabStartData {
             focus: None,

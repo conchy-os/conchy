@@ -15,8 +15,8 @@ use directories::BaseDirs;
 use futures_util::io::{AsyncReadExt, BufReader};
 use futures_util::{select_biased, AsyncBufReadExt, AsyncWrite, AsyncWriteExt, FutureExt as _};
 use niri_config::OutputName;
-use niri_ipc::state::{EventStreamState, EventStreamStatePart as _};
-use niri_ipc::{
+use conchy_ipc::state::{EventStreamState, EventStreamStatePart as _};
+use conchy_ipc::{
     Action, Event, KeyboardLayouts, OutputConfigChanged, Overview, Reply, Request, Response,
     Timestamp, WindowLayout, Workspace,
 };
@@ -79,7 +79,7 @@ impl IpcServer {
 
         let socket_path = if let Some(wayland_socket_name) = wayland_socket_name {
             let wayland_socket_name = wayland_socket_name.to_string_lossy();
-            let socket_name = format!("niri.{wayland_socket_name}.{}.sock", process::id());
+            let socket_name = format!("conchy.{wayland_socket_name}.{}.sock", process::id());
             let mut socket_path = socket_dir();
             socket_path.push(socket_name);
 
@@ -296,25 +296,25 @@ async fn process(ctx: &ClientCtx, request: Request) -> Reply {
                     let name = output.name();
                     for surface in layer_map_for_output(output).layers() {
                         let layer = match surface.layer() {
-                            Layer::Background => niri_ipc::Layer::Background,
-                            Layer::Bottom => niri_ipc::Layer::Bottom,
-                            Layer::Top => niri_ipc::Layer::Top,
-                            Layer::Overlay => niri_ipc::Layer::Overlay,
+                            Layer::Background => conchy_ipc::Layer::Background,
+                            Layer::Bottom => conchy_ipc::Layer::Bottom,
+                            Layer::Top => conchy_ipc::Layer::Top,
+                            Layer::Overlay => conchy_ipc::Layer::Overlay,
                         };
                         let keyboard_interactivity =
                             match surface.cached_state().keyboard_interactivity {
                                 KeyboardInteractivity::None => {
-                                    niri_ipc::LayerSurfaceKeyboardInteractivity::None
+                                    conchy_ipc::LayerSurfaceKeyboardInteractivity::None
                                 }
                                 KeyboardInteractivity::Exclusive => {
-                                    niri_ipc::LayerSurfaceKeyboardInteractivity::Exclusive
+                                    conchy_ipc::LayerSurfaceKeyboardInteractivity::Exclusive
                                 }
                                 KeyboardInteractivity::OnDemand => {
-                                    niri_ipc::LayerSurfaceKeyboardInteractivity::OnDemand
+                                    conchy_ipc::LayerSurfaceKeyboardInteractivity::OnDemand
                                 }
                             };
 
-                        layers.push(niri_ipc::LayerSurface {
+                        layers.push(conchy_ipc::LayerSurface {
                             namespace: surface.namespace().to_owned(),
                             output: name.clone(),
                             layer,
@@ -517,12 +517,12 @@ fn make_ipc_window(
     mapped: &Mapped,
     workspace_id: Option<WorkspaceId>,
     layout: WindowLayout,
-) -> niri_ipc::Window {
+) -> conchy_ipc::Window {
     // Must be read before entering with_toplevel_role: it locks the same surface state, and
     // re-entering that lock deadlocks. The other accessors here are plain field reads.
     let is_fullscreen = mapped.is_fullscreen();
 
-    with_toplevel_role(mapped.toplevel(), |role| niri_ipc::Window {
+    with_toplevel_role(mapped.toplevel(), |role| conchy_ipc::Window {
         id: mapped.id().get(),
         title: role.title.clone(),
         app_id: role.app_id.clone(),
@@ -839,11 +839,11 @@ impl State {
                 // Pending dynamic casts don't change any properties, so we only need to check if
                 // it's missing from the state.
                 if !state.casts.contains_key(&stream_id) {
-                    let cast = niri_ipc::Cast {
+                    let cast = conchy_ipc::Cast {
                         session_id: pending.session_id.get(),
                         stream_id,
-                        kind: niri_ipc::CastKind::PipeWire,
-                        target: niri_ipc::CastTarget::Nothing {},
+                        kind: conchy_ipc::CastKind::PipeWire,
+                        target: conchy_ipc::CastTarget::Nothing {},
                         is_dynamic_target: true,
                         is_active: false,
                         pid: None,
@@ -865,10 +865,10 @@ impl State {
                         || !cast.target.matches(&existing.target)
                         || existing.pw_node_id != pw_node_id
                 }) {
-                    let cast = niri_ipc::Cast {
+                    let cast = conchy_ipc::Cast {
                         session_id: cast.session_id.get(),
                         stream_id,
-                        kind: niri_ipc::CastKind::PipeWire,
+                        kind: conchy_ipc::CastKind::PipeWire,
                         target: cast.target.make_ipc(),
                         is_dynamic_target: cast.dynamic_target,
                         is_active: cast.is_active(),
@@ -894,15 +894,15 @@ impl State {
                 if state.casts.get(&stream_id).is_none_or(|existing| {
                     // Only this property can change.
                     match &existing.target {
-                        niri_ipc::CastTarget::Output { name } => *name != cast_info.output_name,
+                        conchy_ipc::CastTarget::Output { name } => *name != cast_info.output_name,
                         _ => true,
                     }
                 }) {
-                    let cast = niri_ipc::Cast {
+                    let cast = conchy_ipc::Cast {
                         session_id: cast_info.session_id.get(),
                         stream_id,
-                        kind: niri_ipc::CastKind::WlrScreencopy,
-                        target: niri_ipc::CastTarget::Output {
+                        kind: conchy_ipc::CastKind::WlrScreencopy,
+                        target: conchy_ipc::CastTarget::Output {
                             name: cast_info.output_name.clone(),
                         },
                         is_dynamic_target: false,
@@ -939,11 +939,11 @@ impl State {
             seen.insert(stream_id);
 
             if !state.casts.contains_key(&stream_id) {
-                let cast = niri_ipc::Cast {
+                let cast = conchy_ipc::Cast {
                     session_id: session_id.get(),
                     stream_id,
-                    kind: niri_ipc::CastKind::ExtImageCopyCapture,
-                    target: niri_ipc::CastTarget::Output {
+                    kind: conchy_ipc::CastKind::ExtImageCopyCapture,
+                    target: conchy_ipc::CastTarget::Output {
                         name: output.name(),
                     },
                     is_dynamic_target: false,

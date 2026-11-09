@@ -71,7 +71,7 @@ pub struct Stream {
 #[derive(Clone)]
 enum StreamTarget {
     // FIXME: update on scale changes and whatnot.
-    Output(niri_ipc::Output),
+    Output(conchy_ipc::Output),
     Window { id: u64 },
 }
 
