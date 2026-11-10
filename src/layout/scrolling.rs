@@ -3,8 +3,8 @@ use std::iter::{self, zip};
 use std::rc::Rc;
 use std::time::Duration;
 
-use niri_config::utils::MergeWith as _;
-use niri_config::{CenterFocusedColumn, PresetSize, Struts};
+use conchy_wm_config::utils::MergeWith as _;
+use conchy_wm_config::{CenterFocusedColumn, PresetSize, Struts};
 use conchy_ipc::{ColumnDisplay, SizeChange, WindowLayout};
 use ordered_float::NotNan;
 use smithay::backend::renderer::element::RenderElement;
@@ -725,7 +725,7 @@ impl<W: LayoutElement> ScrollingSpace<W> {
         &mut self,
         idx: usize,
         new_view_offset: f64,
-        config: niri_config::Animation,
+        config: conchy_wm_config::Animation,
     ) {
         let new_col_x = self.column_x(idx);
         let old_col_x = self.column_x(self.active_column_idx);
@@ -771,7 +771,7 @@ impl<W: LayoutElement> ScrollingSpace<W> {
         &mut self,
         target_x: Option<f64>,
         idx: usize,
-        config: niri_config::Animation,
+        config: conchy_wm_config::Animation,
     ) {
         let new_view_offset = self.compute_new_view_offset_for_column_centered(target_x, idx);
         self.animate_view_offset_with_config(idx, new_view_offset, config);
@@ -782,7 +782,7 @@ impl<W: LayoutElement> ScrollingSpace<W> {
         target_x: Option<f64>,
         idx: usize,
         prev_idx: Option<usize>,
-        config: niri_config::Animation,
+        config: conchy_wm_config::Animation,
     ) {
         let new_view_offset = self.compute_new_view_offset_for_column(target_x, idx, prev_idx);
         self.animate_view_offset_with_config(idx, new_view_offset, config);
@@ -809,7 +809,7 @@ impl<W: LayoutElement> ScrollingSpace<W> {
         );
     }
 
-    fn activate_column_with_anim_config(&mut self, idx: usize, config: niri_config::Animation) {
+    fn activate_column_with_anim_config(&mut self, idx: usize, config: conchy_wm_config::Animation) {
         if self.active_column_idx == idx
             // During a DnD scroll, animate even when activating the same window, for DnD hold.
             && (self.columns.is_empty() || !self.view_offset.is_dnd_scroll())
@@ -908,7 +908,7 @@ impl<W: LayoutElement> ScrollingSpace<W> {
         activate: bool,
         width: ColumnWidth,
         is_full_width: bool,
-        anim: Option<niri_config::Animation>,
+        anim: Option<conchy_wm_config::Animation>,
     ) {
         let column = Column::new_with_tile(
             tile,
@@ -985,7 +985,7 @@ impl<W: LayoutElement> ScrollingSpace<W> {
         activate: bool,
         width: ColumnWidth,
         is_full_width: bool,
-        anim: Option<niri_config::Animation>,
+        anim: Option<conchy_wm_config::Animation>,
     ) {
         let right_of_idx = self
             .columns
@@ -1002,7 +1002,7 @@ impl<W: LayoutElement> ScrollingSpace<W> {
         idx: Option<usize>,
         mut column: Column<W>,
         activate: bool,
-        anim_config: Option<niri_config::Animation>,
+        anim_config: Option<conchy_wm_config::Animation>,
     ) {
         let was_empty = self.columns.is_empty();
 
@@ -1077,7 +1077,7 @@ impl<W: LayoutElement> ScrollingSpace<W> {
         column_idx: usize,
         tile_idx: usize,
         transaction: Transaction,
-        anim_config: Option<niri_config::Animation>,
+        anim_config: Option<conchy_wm_config::Animation>,
     ) -> RemovedTile<W> {
         // If this is the only tile in the column, remove the whole column.
         if self.columns[column_idx].tiles.len() == 1 {
@@ -1193,7 +1193,7 @@ impl<W: LayoutElement> ScrollingSpace<W> {
     pub fn remove_column_by_idx(
         &mut self,
         column_idx: usize,
-        anim_config: Option<niri_config::Animation>,
+        anim_config: Option<conchy_wm_config::Animation>,
     ) -> Column<W> {
         // Animate movement of the other columns.
         let movement_config = anim_config.unwrap_or(self.options.animations.window_movement.0);
@@ -3919,7 +3919,7 @@ impl ViewOffset {
 }
 
 impl ViewGesture {
-    fn animate_from(&mut self, from: f64, clock: Clock, config: niri_config::Animation) {
+    fn animate_from(&mut self, from: f64, clock: Clock, config: conchy_wm_config::Animation) {
         let current = self.animation.as_ref().map_or(0., Animation::value);
         self.animation = Some(Animation::new(clock, from + current, 0., 0., config));
     }
@@ -4262,7 +4262,7 @@ impl<W: LayoutElement> Column<W> {
     pub fn animate_move_from_with_config(
         &mut self,
         from: Point<f64, Logical>,
-        config: niri_config::Animation,
+        config: conchy_wm_config::Animation,
     ) {
         self.animate_move_x_from_with_config(from.x, config);
         self.animate_move_y_from_with_config(from.y, config);
@@ -4278,7 +4278,7 @@ impl<W: LayoutElement> Column<W> {
     pub fn animate_move_x_from_with_config(
         &mut self,
         from_x_offset: f64,
-        config: niri_config::Animation,
+        config: conchy_wm_config::Animation,
     ) {
         let (current_offset, current_between) =
             self.move_x_animation.as_ref().map_or((0., false), |move_| {
@@ -4303,7 +4303,7 @@ impl<W: LayoutElement> Column<W> {
     pub fn animate_move_y_from_with_config(
         &mut self,
         from_y_offset: f64,
-        config: niri_config::Animation,
+        config: conchy_wm_config::Animation,
     ) {
         let (current_offset, current_between) =
             self.move_y_animation.as_ref().map_or((0., false), |move_| {
@@ -5657,7 +5657,7 @@ fn compute_working_area(
 }
 
 fn compute_toplevel_bounds(
-    border_config: niri_config::Border,
+    border_config: conchy_wm_config::Border,
     working_area_size: Size<f64, Logical>,
     extra_size: Size<f64, Logical>,
     gaps: f64,
@@ -5705,7 +5705,7 @@ fn resolve_preset_size(
 
 #[cfg(test)]
 mod tests {
-    use niri_config::FloatOrInt;
+    use conchy_wm_config::FloatOrInt;
 
     use super::*;
     use crate::utils::round_logical_in_physical;

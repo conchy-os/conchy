@@ -1,7 +1,7 @@
 use std::cell::{Cell, Ref, RefCell};
 use std::time::Duration;
 
-use niri_config::{Color, Config, CornerRadius, GradientInterpolation, WindowRule};
+use conchy_wm_config::{Color, Config, CornerRadius, GradientInterpolation, WindowRule};
 use smithay::backend::renderer::element::Kind;
 use smithay::desktop::space::SpaceElement as _;
 use smithay::desktop::{PopupKind, PopupManager, Window};
@@ -109,7 +109,7 @@ pub struct Mapped {
     block_out_buffer: RefCell<SolidColorBuffer>,
 
     /// The blur config, passed for background effect rendering.
-    blur_config: niri_config::Blur,
+    blur_config: conchy_wm_config::Blur,
 
     /// Whether the next configure should be animated, if the configured state changed.
     animate_next_configure: bool,
@@ -663,7 +663,7 @@ impl LayoutElement for Mapped {
         &self.window
     }
 
-    fn update_config(&mut self, blur_config: niri_config::Blur) {
+    fn update_config(&mut self, blur_config: conchy_wm_config::Blur) {
         self.blur_config = blur_config;
     }
 
@@ -728,7 +728,7 @@ impl LayoutElement for Mapped {
             let popup_rules = match popup {
                 PopupKind::Xdg(_) => self.rules.popups,
                 // IME popups aren't affected by rules for regular popups.
-                PopupKind::InputMethod(_) => niri_config::ResolvedPopupsRules::default(),
+                PopupKind::InputMethod(_) => conchy_wm_config::ResolvedPopupsRules::default(),
             };
             let alpha = alpha * popup_rules.opacity.unwrap_or(1.).clamp(0., 1.);
 

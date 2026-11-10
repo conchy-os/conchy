@@ -4,7 +4,7 @@ use std::time::Duration;
 use niri::animation::Clock;
 use niri::layout::{ActivateWindow, AddWindowTarget, LayoutElement as _, Options, SizingMode};
 use niri::render_helpers::{RenderCtx, RenderTarget};
-use niri_config::{Color, OutputName, PresetSize};
+use conchy_wm_config::{Color, OutputName, PresetSize};
 use smithay::backend::renderer::element::RenderElement;
 use smithay::backend::renderer::gles::GlesRenderer;
 use smithay::desktop::layer_map_for_output;
@@ -52,12 +52,12 @@ impl Layout {
         });
 
         let options = Options {
-            layout: niri_config::Layout {
-                focus_ring: niri_config::FocusRing {
+            layout: conchy_wm_config::Layout {
+                focus_ring: conchy_wm_config::FocusRing {
                     off: true,
                     ..Default::default()
                 },
-                border: niri_config::Border {
+                border: conchy_wm_config::Border {
                     off: false,
                     width: 4.,
                     active_color: Color::from_rgba8_unpremul(255, 163, 72, 255),

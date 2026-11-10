@@ -188,8 +188,8 @@ fn unfullscreen_with_large_border() {
     ];
 
     let options = Options {
-        layout: niri_config::Layout {
-            border: niri_config::Border {
+        layout: conchy_wm_config::Layout {
+            border: conchy_wm_config::Border {
                 off: false,
                 width: 10000.,
                 ..Default::default()
@@ -499,6 +499,7 @@ fn unfullscreen_preserves_view_pos() {
 }
 
 #[test]
+#[ignore = "column tabs disabled in conchy-wm"]
 fn unfullscreen_of_tabbed_preserves_view_pos() {
     let ops = [
         Op::AddOutput(1),
@@ -552,6 +553,7 @@ fn unfullscreen_of_tabbed_preserves_view_pos() {
 }
 
 #[test]
+#[ignore = "column tabs disabled in conchy-wm"]
 fn unfullscreen_of_tabbed_via_change_to_normal_preserves_view_pos() {
     let ops = [
         Op::AddOutput(1),
@@ -605,6 +607,7 @@ fn unfullscreen_of_tabbed_via_change_to_normal_preserves_view_pos() {
 }
 
 #[test]
+#[ignore = "column tabs disabled in conchy-wm"]
 fn removing_only_fullscreen_tile_updates_view_offset() {
     let ops = [
         Op::AddOutput(1),

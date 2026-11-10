@@ -15,8 +15,8 @@ use anyhow::{anyhow, bail, ensure, Context};
 use bytemuck::cast_slice_mut;
 use drm_ffi::drm_mode_modeinfo;
 use libc::dev_t;
-use niri_config::output::{HdrMode, Modeline};
-use niri_config::{Config, OutputName};
+use conchy_wm_config::output::{HdrMode, Modeline};
+use conchy_wm_config::{Config, OutputName};
 use conchy_ipc::{HSyncPolarity, VSyncPolarity};
 use smithay::backend::allocator::dmabuf::Dmabuf;
 use smithay::backend::allocator::format::FormatSet;
@@ -515,7 +515,7 @@ impl Tty {
         let _span = tracy_client::span!("Tty::new");
 
         let (session, notifier) = LibSeatSession::new().context(
-            "Error creating a session. This might mean that you're trying to run niri on a TTY \
+            "Error creating a session. This might mean that you're trying to run conchy-wm on a TTY \
              that is already busy, for example if you're running this inside tmux that had been \
              originally started on a different TTY",
         )?;
@@ -4139,7 +4139,7 @@ fn modeinfo_name_slice_from_string(mode_name: &str) -> [core::ffi::c_char; 32] {
 
 fn pick_mode(
     connector: &connector::Info,
-    target: Option<niri_config::output::Mode>,
+    target: Option<conchy_wm_config::output::Mode>,
 ) -> Option<(control::Mode, bool)> {
     let mut mode = None;
     let mut fallback = false;
@@ -4383,7 +4383,7 @@ fn hdr_force_8bit(disable_10bit_output: bool) -> bool {
 /// (and can do it). Requesting a 10-bit framebuffer unconditionally hangs the initial modeset on
 /// some drivers (notably nvidia), so SDR outputs stay 8-bit exactly as upstream.
 fn wants_10bit_formats(
-    output: &niri_config::Output,
+    output: &conchy_wm_config::Output,
     hdr_supported: bool,
     disable_10bit_output: bool,
 ) -> bool {
@@ -4396,7 +4396,7 @@ fn wants_10bit_formats(
 /// Clamped to the connector's supported range; `None` when the connector has no `max bpc`
 /// property at all.
 fn effective_max_bpc(
-    output: &niri_config::Output,
+    output: &conchy_wm_config::Output,
     range: &Option<RangeInclusive<u32>>,
 ) -> Option<u32> {
     let range = range.as_ref()?;
@@ -4530,7 +4530,7 @@ unsafe fn init_libinput_plugin_system(libinput: &Libinput) {
 #[cfg(test)]
 mod tests {
     use insta::assert_debug_snapshot;
-    use niri_config::output::Modeline;
+    use conchy_wm_config::output::Modeline;
     use conchy_ipc::{HSyncPolarity, VSyncPolarity};
 
     use smithay::wayland::color::management::ImageDescription;

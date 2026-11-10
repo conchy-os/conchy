@@ -221,7 +221,7 @@ impl<S: ErrorSpan> knuffel::DecodeScalar<S> for TearingMode {
 
 /// HDR (high dynamic range) output configuration.
 ///
-/// Presence of the `hdr` node enables HDR signalling on the output: niri will request a 10-bit (or
+/// Presence of the `hdr` node enables HDR signalling on the output: conchy-wm will request a 10-bit (or
 /// wider) scanout buffer, set the connector `Colorspace` to BT.2020 RGB, and attach an
 /// `HDR_OUTPUT_METADATA` infoframe advertising the PQ (SMPTE ST 2084) transfer function. This is
 /// only acted upon for outputs whose driver exposes the corresponding DRM connector properties.
@@ -236,7 +236,7 @@ pub struct Hdr {
     pub reference_luminance: Option<FloatOrInt<0, 10000>>,
     /// Peak luminance of the display, in cd/m² (nits), overriding the value from its EDID.
     ///
-    /// Meant for displays whose EDID lacks the HDR luminance data (many TVs): niri then assumes
+    /// Meant for displays whose EDID lacks the HDR luminance data (many TVs): conchy-wm then assumes
     /// a conservative 500 cd/m². It is used for tone mapping, the `HDR_OUTPUT_METADATA` sent to
     /// the display, and the luminances advertised to clients.
     #[knuffel(child, unwrap(argument))]
@@ -332,7 +332,7 @@ impl OutputName {
 
         // If no other fields are available, don't try to match by them.
         //
-        // This is used by niri msg output.
+        // This is used by conchy msg output.
         if self.make.is_none() && self.model.is_none() && self.serial.is_none() {
             return false;
         }

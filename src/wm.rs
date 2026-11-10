@@ -15,9 +15,9 @@ use _server_decoration::server::org_kde_kwin_server_decoration_manager::Mode as 
 use anyhow::{bail, ensure, Context};
 use calloop::futures::Scheduler;
 use calloop::ping::make_ping;
-use niri_config::debug::PreviewRender;
-use niri_config::output::{HdrMode, MaxBpc, TearingMode};
-use niri_config::{
+use conchy_wm_config::debug::PreviewRender;
+use conchy_wm_config::output::{HdrMode, MaxBpc, TearingMode};
+use conchy_wm_config::{
     Config, FloatOrInt, Key, Modifiers, OutputName, TrackLayout, WarpMouseToFocusMode,
     WorkspaceReference, Xkb,
 };
@@ -221,6 +221,8 @@ const CLEAR_COLOR_LOCKED: [f32; 4] = [0.3, 0.1, 0.1, 1.];
 // should be ~1.995 seconds.
 const FRAME_CALLBACK_THROTTLE: Option<Duration> = Some(Duration::from_millis(995));
 
+pub type ConchyWm = Niri;
+
 pub struct Niri {
     pub config: Rc<RefCell<Config>>,
 
@@ -229,7 +231,7 @@ pub struct Niri {
     /// This does not include transient output config changes done via IPC. It is only used when
     /// reloading the config from disk to determine if the output configuration should be reloaded
     /// (and transient changes dropped).
-    pub config_file_output_config: niri_config::Outputs,
+    pub config_file_output_config: conchy_wm_config::Outputs,
 
     pub config_file_watcher: Option<Watcher>,
 
@@ -2192,7 +2194,7 @@ impl State {
 
     pub fn modify_output_config<F>(&mut self, name: &str, fun: F)
     where
-        F: FnOnce(&mut niri_config::Output),
+        F: FnOnce(&mut conchy_wm_config::Output),
     {
         // Try hard to find the output config section corresponding to the output set by the
         // user. Since if we add a new section and some existing section also matches the
@@ -2222,7 +2224,7 @@ impl State {
         let config = if let Some(config) = config.outputs.find_mut(match_name) {
             config
         } else {
-            config.outputs.0.push(niri_config::Output {
+            config.outputs.0.push(conchy_wm_config::Output {
                 // Save name as set by the user.
                 name: String::from(name),
                 ..Default::default()
@@ -2240,7 +2242,7 @@ impl State {
             conchy_ipc::OutputAction::Mode { mode } => {
                 config.mode = match mode {
                     conchy_ipc::ModeToSet::Automatic => None,
-                    conchy_ipc::ModeToSet::Specific(mode) => Some(niri_config::output::Mode {
+                    conchy_ipc::ModeToSet::Specific(mode) => Some(conchy_wm_config::output::Mode {
                         custom: false,
                         mode,
                     }),
@@ -2248,7 +2250,7 @@ impl State {
                 config.modeline = None;
             }
             conchy_ipc::OutputAction::CustomMode { mode } => {
-                config.mode = Some(niri_config::output::Mode { custom: true, mode });
+                config.mode = Some(conchy_wm_config::output::Mode { custom: true, mode });
                 config.modeline = None;
             }
             conchy_ipc::OutputAction::Modeline {
@@ -2265,7 +2267,7 @@ impl State {
                 vsync_polarity,
             } => {
                 // Do not reset config.mode to None since it's used as a fallback.
-                config.modeline = Some(niri_config::output::Modeline {
+                config.modeline = Some(conchy_wm_config::output::Modeline {
                     clock,
                     hdisplay,
                     hsync_start,
@@ -2289,7 +2291,7 @@ impl State {
             conchy_ipc::OutputAction::Position { position } => {
                 config.position = match position {
                     conchy_ipc::PositionToSet::Automatic => None,
-                    conchy_ipc::PositionToSet::Specific(position) => Some(niri_config::Position {
+                    conchy_ipc::PositionToSet::Specific(position) => Some(conchy_wm_config::Position {
                         x: position.x,
                         y: position.y,
                     }),
@@ -2297,7 +2299,7 @@ impl State {
             }
             conchy_ipc::OutputAction::Vrr { vrr } => {
                 config.variable_refresh_rate = if vrr.vrr {
-                    Some(niri_config::Vrr {
+                    Some(conchy_wm_config::Vrr {
                         on_demand: vrr.on_demand,
                     })
                 } else {
@@ -2703,7 +2705,7 @@ impl Niri {
     fn output_hdr_config(
         &self,
         output: &Output,
-    ) -> Option<(niri_config::output::Hdr, OutputHdrCaps)> {
+    ) -> Option<(conchy_wm_config::output::Hdr, OutputHdrCaps)> {
         let caps = *output.user_data().get::<OutputHdrCaps>()?;
         if !caps.supported {
             return None;
@@ -2717,7 +2719,7 @@ impl Niri {
     /// The PQ/BT.2020 image description describing an HDR output, with luminances from the
     /// sink's EDID and the configured SDR reference white.
     fn hdr_blend_description(
-        hdr: &niri_config::output::Hdr,
+        hdr: &conchy_wm_config::output::Hdr,
         caps: OutputHdrCaps,
     ) -> ImageDescription {
         // Same placeholder as build_hdr_metadata() in the TTY backend uses for sinks whose
@@ -3418,7 +3420,7 @@ impl Niri {
             output: Output,
             name: OutputName,
             position: Option<Point<i32, Logical>>,
-            config: Option<niri_config::Position>,
+            config: Option<conchy_wm_config::Position>,
         }
 
         let config = self.config.borrow();

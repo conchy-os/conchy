@@ -5,7 +5,7 @@ use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
 use anyhow::Context as _;
-use niri_config::{Config, OutputName};
+use conchy_wm_config::{Config, OutputName};
 use smithay::backend::allocator::dmabuf::Dmabuf;
 use smithay::backend::drm::DrmNode;
 use smithay::backend::egl::EGLDevice;
@@ -50,9 +50,9 @@ impl Winit {
         let builder = WindowAttributes::default()
             .with_surface_size(LogicalSize::new(1280.0, 800.0))
             // .with_resizable(false)
-            .with_title("niri")
+            .with_title("conchy-wm")
             .with_platform_attributes(Box::new(
-                WindowAttributesWayland::default().with_name("niri", ""),
+                WindowAttributesWayland::default().with_name("conchy-wm", ""),
             ));
         let (backend, winit) = winit::init_from_attributes(builder)?;
 

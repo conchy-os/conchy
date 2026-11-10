@@ -14,7 +14,7 @@ use calloop::io::Async;
 use directories::BaseDirs;
 use futures_util::io::{AsyncReadExt, BufReader};
 use futures_util::{select_biased, AsyncBufReadExt, AsyncWrite, AsyncWriteExt, FutureExt as _};
-use niri_config::OutputName;
+use conchy_wm_config::OutputName;
 use conchy_ipc::state::{EventStreamState, EventStreamStatePart as _};
 use conchy_ipc::{
     Action, Event, KeyboardLayouts, OutputConfigChanged, Overview, Reply, Request, Response,
@@ -384,7 +384,7 @@ async fn process(ctx: &ClientCtx, request: Request) -> Reply {
 
             let (tx, rx) = async_channel::bounded(1);
 
-            let action = niri_config::Action::from(action);
+            let action = conchy_wm_config::Action::from(action);
             ctx.event_loop.insert_idle(move |state| {
                 // Make sure some logic like workspace clean-up has a chance to run before doing
                 // actions.

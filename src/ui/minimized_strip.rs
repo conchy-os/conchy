@@ -77,7 +77,7 @@ pub fn thumbnail_geometry(niri: &Niri, output: &Output) -> Vec<ThumbnailGeo> {
 /// compositor.
 fn layout_thumbnails(
     windows: &[(MappedId, Size<f64, Logical>)],
-    config: &niri_config::MinimizedWindows,
+    config: &conchy_wm_config::MinimizedWindows,
     output_size: Size<f64, Logical>,
     scale: f64,
 ) -> Vec<ThumbnailGeo> {
@@ -225,7 +225,7 @@ pub fn render_output<R: NiriRenderer>(
 
 #[cfg(test)]
 mod tests {
-    use niri_config::{MinimizedPosition, MinimizedWindows};
+    use conchy_wm_config::{MinimizedPosition, MinimizedWindows};
 
     use super::*;
 

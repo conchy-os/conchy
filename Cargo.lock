@@ -738,6 +738,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "conchy-visual-tests"
+version = "26.4.0"
+dependencies = [
+ "anyhow",
+ "conchy-wm",
+ "conchy-wm-config",
+ "gtk4",
+ "libadwaita",
+ "smithay",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "conchy-wm"
 version = "26.4.0"
 dependencies = [
@@ -757,6 +771,7 @@ dependencies = [
  "clap_complete",
  "clap_complete_nushell",
  "conchy-ipc",
+ "conchy-wm-config",
  "directories",
  "drm-ffi",
  "fastrand",
@@ -769,7 +784,6 @@ dependencies = [
  "libc",
  "libdisplay-info",
  "log",
- "niri-config",
  "ordered-float",
  "pango",
  "pangocairo",
@@ -796,6 +810,24 @@ dependencies = [
  "xcursor",
  "xshell",
  "zbus",
+]
+
+[[package]]
+name = "conchy-wm-config"
+version = "26.4.0"
+dependencies = [
+ "bitflags",
+ "conchy-ipc",
+ "csscolorparser",
+ "diff",
+ "insta",
+ "knuffel",
+ "miette",
+ "pretty_assertions",
+ "regex",
+ "smithay",
+ "tracing",
+ "tracy-client",
 ]
 
 [[package]]
@@ -2297,38 +2329,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ee6cda3051665f1fb8d9e08fc35c96d5a244fb1be711a03b71118828afc9a873"
 dependencies = [
  "jni-sys 0.3.1",
-]
-
-[[package]]
-name = "niri-config"
-version = "26.4.0"
-dependencies = [
- "bitflags",
- "conchy-ipc",
- "csscolorparser",
- "diff",
- "insta",
- "knuffel",
- "miette",
- "pretty_assertions",
- "regex",
- "smithay",
- "tracing",
- "tracy-client",
-]
-
-[[package]]
-name = "niri-visual-tests"
-version = "26.4.0"
-dependencies = [
- "anyhow",
- "conchy-wm",
- "gtk4",
- "libadwaita",
- "niri-config",
- "smithay",
- "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]

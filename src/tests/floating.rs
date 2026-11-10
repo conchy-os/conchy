@@ -1,6 +1,6 @@
 use client::ClientId;
 use insta::assert_snapshot;
-use niri_config::Config;
+use conchy_wm_config::Config;
 use conchy_ipc::SizeChange;
 use smithay::utils::Point;
 use wayland_client::protocol::wl_surface::WlSurface;

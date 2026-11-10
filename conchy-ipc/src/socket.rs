@@ -69,8 +69,8 @@ impl Socket {
     /// # Examples
     ///
     /// ```no_run
-    /// use niri_ipc::{Request, Response};
-    /// use niri_ipc::socket::Socket;
+    /// use conchy_ipc::{Request, Response};
+    /// use conchy_ipc::socket::Socket;
     ///
     /// fn main() -> std::io::Result<()> {
     ///     let mut socket = Socket::connect()?;

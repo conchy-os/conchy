@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 use anyhow::Context;
 use arrayvec::ArrayVec;
-use niri_config::{Action, Config};
+use conchy_wm_config::{Action, Config};
 use conchy_ipc::SizeChange;
 use pango::{Alignment, FontDescription};
 use pangocairo::cairo::{self, ImageSurface};

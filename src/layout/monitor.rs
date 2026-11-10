@@ -3,7 +3,7 @@ use std::iter::zip;
 use std::rc::Rc;
 use std::time::Duration;
 
-use niri_config::{CornerRadius, LayoutPart};
+use conchy_wm_config::{CornerRadius, LayoutPart};
 use smithay::backend::renderer::element::utils::{
     CropRenderElement, Relocate, RelocateRenderElement, RescaleRenderElement,
 };
@@ -91,7 +91,7 @@ pub struct Monitor<W: LayoutElement> {
     /// Configurable properties of the layout.
     pub(super) options: Rc<Options>,
     /// Layout config overrides for this monitor.
-    layout_config: Option<niri_config::LayoutPart>,
+    layout_config: Option<conchy_wm_config::LayoutPart>,
 }
 
 #[derive(Debug)]
@@ -251,7 +251,7 @@ impl WorkspaceSwitchGesture {
         }
     }
 
-    fn animate_from(&mut self, from: f64, clock: Clock, config: niri_config::Animation) {
+    fn animate_from(&mut self, from: f64, clock: Clock, config: conchy_wm_config::Animation) {
         let current = self.animation.as_ref().map_or(0., Animation::value);
         self.animation = Some(Animation::new(clock, from + current, 0., 0., config));
     }
@@ -449,7 +449,7 @@ impl<W: LayoutElement> Monitor<W> {
     pub fn activate_workspace_with_anim_config(
         &mut self,
         idx: usize,
-        config: Option<niri_config::Animation>,
+        config: Option<conchy_wm_config::Animation>,
     ) {
         // FIXME: also compute and use current velocity.
         let current_idx = self.workspace_render_idx();
@@ -552,7 +552,7 @@ impl<W: LayoutElement> Monitor<W> {
         mut workspace_idx: usize,
         column: Column<W>,
         activate: bool,
-        anim: Option<niri_config::Animation>,
+        anim: Option<conchy_wm_config::Animation>,
     ) {
         let workspace = &mut self.workspaces[workspace_idx];
 
@@ -587,7 +587,7 @@ impl<W: LayoutElement> Monitor<W> {
         width: ColumnWidth,
         is_full_width: bool,
         is_floating: bool,
-        anim: Option<niri_config::Animation>,
+        anim: Option<conchy_wm_config::Animation>,
     ) {
         let (mut workspace_idx, target) = self.resolve_add_window_target(target);
 
@@ -1214,7 +1214,7 @@ impl<W: LayoutElement> Monitor<W> {
         self.options = options;
     }
 
-    pub fn update_layout_config(&mut self, layout_config: Option<niri_config::LayoutPart>) -> bool {
+    pub fn update_layout_config(&mut self, layout_config: Option<conchy_wm_config::LayoutPart>) -> bool {
         if self.layout_config == layout_config {
             return false;
         }
@@ -2135,7 +2135,7 @@ impl<W: LayoutElement> Monitor<W> {
         self.working_area
     }
 
-    pub fn layout_config(&self) -> Option<&niri_config::LayoutPart> {
+    pub fn layout_config(&self) -> Option<&conchy_wm_config::LayoutPart> {
         self.layout_config.as_ref()
     }
 

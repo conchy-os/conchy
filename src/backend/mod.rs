@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use niri_config::{Config, ModKey};
+use conchy_wm_config::{Config, ModKey};
 use smithay::backend::allocator::dmabuf::Dmabuf;
 use smithay::backend::drm::DrmNode;
 use smithay::backend::renderer::gles::GlesRenderer;

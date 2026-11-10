@@ -13,7 +13,7 @@
 
 use std::time::Duration;
 
-use niri_config::{Color, Config, CornerRadius, GradientInterpolation};
+use conchy_wm_config::{Color, Config, CornerRadius, GradientInterpolation};
 use conchy_ipc::SizeChange;
 use smithay::backend::renderer::element::{Element as _, Kind};
 use smithay::utils::{Physical, Point, Rectangle, Scale, Size};
@@ -381,7 +381,7 @@ fn scene_overview_draws_gles() {
 /// screenshot, a screencast) it is converted back to SDR.
 #[test]
 fn scene_hdr_content_draws_gles() {
-    use niri_config::output::Hdr;
+    use conchy_wm_config::output::Hdr;
     use smithay::reexports::wayland_protocols::wp::color_management::v1::client::wp_color_manager_v1::{
         Primaries, RenderIntent, TransferFunction,
     };
@@ -400,7 +400,7 @@ fn scene_hdr_content_draws_gles() {
         ",
     )
     .unwrap();
-    config.outputs.0.push(niri_config::Output {
+    config.outputs.0.push(conchy_wm_config::Output {
         name: "headless-1".to_owned(),
         hdr: Some(Hdr::default()),
         ..Default::default()

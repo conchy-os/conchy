@@ -95,7 +95,7 @@ pub enum Msg {
     Output {
         /// Output name.
         ///
-        /// Run `niri msg outputs` to see the output names.
+        /// Run `conchy msg outputs` to see the output names.
         #[arg()]
         output: String,
         /// Configuration to apply.
@@ -104,9 +104,9 @@ pub enum Msg {
     },
     /// Start continuously receiving events from the compositor.
     EventStream,
-    /// Print the version of the running niri instance.
+    /// Print the version of the running conchy instance.
     Version,
-    /// Request an error from the running niri instance.
+    /// Request an error from the running conchy instance.
     RequestError,
     /// Print the overview state.
     OverviewState,

@@ -1,6 +1,6 @@
 use std::cell::Cell;
 
-use niri_config::PresetSize;
+use conchy_wm_config::PresetSize;
 use smithay::backend::input::InputTime;
 use smithay::desktop::{
     find_popup_root_surface, get_popup_toplevel_coords, layer_map_for_output, utils, LayerSurface,

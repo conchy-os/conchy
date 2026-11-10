@@ -14,7 +14,7 @@ use anyhow::{ensure, Context};
 use bitflags::bitflags;
 use directories::UserDirs;
 use git_version::git_version;
-use niri_config::{Config, OutputName};
+use conchy_wm_config::{Config, OutputName};
 use smithay::backend::renderer::utils::{
     with_renderer_surface_state, RendererSurfaceStateUserData,
 };
@@ -585,7 +585,7 @@ pub fn show_screenshot_notification(image_path: Option<&Path>) -> anyhow::Result
         Some("org.freedesktop.Notifications"),
         "Notify",
         &(
-            "niri",
+            "conchy-wm",
             0u32,
             image_url.as_ref().map(|url| url.as_str()).unwrap_or(""),
             "Screenshot captured",

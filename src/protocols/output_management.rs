@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::iter::zip;
 use std::mem;
 
-use niri_config::{FloatOrInt, OutputName, Vrr};
+use conchy_wm_config::{FloatOrInt, OutputName, Vrr};
 use conchy_ipc::Transform;
 use smithay::reexports::wayland_protocols_wlr::output_management::v1::server::{
     zwlr_output_configuration_head_v1, zwlr_output_configuration_v1, zwlr_output_head_v1,
@@ -40,7 +40,7 @@ pub struct OutputManagementManagerState {
     serial: u32,
     clients: HashMap<ClientId, ClientData>,
     current_state: HashMap<OutputId, conchy_ipc::Output>,
-    current_config: niri_config::Outputs,
+    current_config: conchy_wm_config::Outputs,
 }
 
 pub struct OutputManagementManagerGlobalData {
@@ -49,7 +49,7 @@ pub struct OutputManagementManagerGlobalData {
 
 pub trait OutputManagementHandler {
     fn output_management_state(&mut self) -> &mut OutputManagementManagerState;
-    fn apply_output_config(&mut self, config: niri_config::Outputs);
+    fn apply_output_config(&mut self, config: conchy_wm_config::Outputs);
 }
 
 struct OutputConfigurationData {
@@ -58,7 +58,7 @@ struct OutputConfigurationData {
 
 #[derive(Debug)]
 enum OutputConfigurationState {
-    Ongoing(HashMap<OutputId, niri_config::Output>),
+    Ongoing(HashMap<OutputId, conchy_wm_config::Output>),
     Finished,
 }
 
@@ -89,7 +89,7 @@ impl OutputManagementManagerState {
         }
     }
 
-    pub fn on_config_changed(&mut self, new_config: niri_config::Outputs) {
+    pub fn on_config_changed(&mut self, new_config: conchy_wm_config::Outputs) {
         self.current_config = new_config;
     }
 
@@ -423,7 +423,7 @@ where
                             .current_config
                             .find(&name)
                             .cloned()
-                            .unwrap_or_else(|| niri_config::Output {
+                            .unwrap_or_else(|| conchy_wm_config::Output {
                                 name: name.format_make_model_serial_or_connector(),
                                 ..Default::default()
                             });
@@ -473,7 +473,7 @@ where
                             .current_config
                             .find(&name)
                             .cloned()
-                            .unwrap_or_else(|| niri_config::Output {
+                            .unwrap_or_else(|| conchy_wm_config::Output {
                                 name: name.format_make_model_serial_or_connector(),
                                 ..Default::default()
                             });
@@ -628,7 +628,7 @@ where
                     return;
                 };
 
-                new_config.mode = Some(niri_config::output::Mode {
+                new_config.mode = Some(conchy_wm_config::output::Mode {
                     custom: false,
                     mode: conchy_ipc::ConfiguredMode {
                         width: mode.width,
@@ -657,7 +657,7 @@ where
                     return;
                 }
 
-                new_config.mode = Some(niri_config::output::Mode {
+                new_config.mode = Some(conchy_wm_config::output::Mode {
                     custom: true,
                     mode: conchy_ipc::ConfiguredMode {
                         width,
@@ -668,7 +668,7 @@ where
                 new_config.modeline = None;
             }
             zwlr_output_configuration_head_v1::Request::SetPosition { x, y } => {
-                new_config.position = Some(niri_config::Position { x, y });
+                new_config.position = Some(conchy_wm_config::Position { x, y });
             }
             zwlr_output_configuration_head_v1::Request::SetTransform { transform } => {
                 let transform = match transform {

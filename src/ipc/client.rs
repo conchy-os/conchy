@@ -4,7 +4,7 @@ use std::path::Path;
 use std::{env, slice};
 
 use anyhow::{anyhow, bail, Context};
-use niri_config::OutputName;
+use conchy_wm_config::OutputName;
 use conchy_ipc::socket::Socket;
 use conchy_ipc::{
     Action, Cast, CastKind, CastTarget, Event, KeyboardLayouts, LogicalOutput, Mode, Output,
@@ -67,12 +67,12 @@ pub fn handle_msg(mut msg: Msg, json: bool, print_request: bool) -> anyhow::Resu
     }
 
     let is_event_stream = matches!(request, Request::EventStream);
-    let mut socket = Socket::connect().context("error connecting to the niri socket")?;
+    let mut socket = Socket::connect().context("error connecting to the conchy-wm socket")?;
 
     let result = socket.send(request);
 
-    // For errors that can be caused by a version mismatch between the running niri instance and
-    // the niri msg CLI, we will try to fetch and compare the versions.
+    // For errors that can be caused by a version mismatch between the running conchy-wm instance and
+    // the conchy-wm msg CLI, we will try to fetch and compare the versions.
     let check_compositor_version = match &result {
         Err(err) => {
             // Response JSON parsing errors.
@@ -81,13 +81,13 @@ pub fn handle_msg(mut msg: Msg, json: bool, print_request: bool) -> anyhow::Resu
                 ErrorKind::InvalidData | ErrorKind::UnexpectedEof
             )
         }
-        // Error returned from niri.
+        // Error returned from conchy-wm.
         Ok(Err(_)) => true,
         _ => false,
     };
 
     let compositor_version = if check_compositor_version && !matches!(msg, Msg::Version) {
-        // Reconnect to support older niri versions with one request per connection.
+        // Reconnect to support older conchy versions with one request per connection.
         Socket::connect()
             .and_then(|mut socket| socket.send(Request::Version))
             .ok()
@@ -105,16 +105,16 @@ pub fn handle_msg(mut msg: Msg, json: bool, print_request: bool) -> anyhow::Resu
         Some(Ok(Response::Version(compositor_version))) => {
             let cli_version = version();
             if cli_version != compositor_version {
-                eprintln!("Running niri compositor has a different version from the niri CLI:");
+                eprintln!("Running conchy-wm compositor has a different version from the conchy-wm CLI:");
                 eprintln!("Compositor version: {compositor_version}");
                 eprintln!("CLI version:        {cli_version}");
-                eprintln!("Did you forget to restart niri after an update?");
+                eprintln!("Did you forget to restart conchy-wm after an update?");
                 eprintln!();
             }
         }
         Some(_) => {
-            eprintln!("Unable to get the running niri compositor version.");
-            eprintln!("Did you forget to restart niri after an update?");
+            eprintln!("Unable to get the running conchy-wm compositor version.");
+            eprintln!("Did you forget to restart conchy-wm after an update?");
             eprintln!();
         }
         None => {
@@ -123,8 +123,8 @@ pub fn handle_msg(mut msg: Msg, json: bool, print_request: bool) -> anyhow::Resu
         }
     }
 
-    let reply = result.context("error communicating with niri")?;
-    let response = reply.map_err(|err_msg| anyhow!(err_msg).context("niri returned an error"))?;
+    let reply = result.context("error communicating with conchy-wm")?;
+    let response = reply.map_err(|err_msg| anyhow!(err_msg).context("conchy-wm returned an error"))?;
 
     match msg {
         Msg::RequestError => {
@@ -149,8 +149,8 @@ pub fn handle_msg(mut msg: Msg, json: bool, print_request: bool) -> anyhow::Resu
             }
 
             if cli_version != compositor_version {
-                eprintln!("Running niri compositor has a different version from the niri CLI.");
-                eprintln!("Did you forget to restart niri after an update?");
+                eprintln!("Running conchy-wm compositor has a different version from the conchy-wm CLI.");
+                eprintln!("Did you forget to restart conchy-wm after an update?");
                 eprintln!();
             }
 
@@ -435,7 +435,7 @@ pub fn handle_msg(mut msg: Msg, json: bool, print_request: bool) -> anyhow::Resu
 
             let mut read_event = socket.read_events();
             loop {
-                let event = read_event().context("error reading event from niri")?;
+                let event = read_event().context("error reading event from conchy-wm")?;
 
                 if json {
                     let event = serde_json::to_string(&event).context("error formatting event")?;
@@ -573,7 +573,7 @@ pub fn handle_msg(mut msg: Msg, json: bool, print_request: bool) -> anyhow::Resu
             if is_event_stream {
                 let mut read_event = socket.read_events();
                 loop {
-                    let event = read_event().context("error reading event from niri")?;
+                    let event = read_event().context("error reading event from conchy-wm")?;
                     let event = serde_json::to_string(&event).context("error formatting event")?;
                     println!("{event}");
                 }

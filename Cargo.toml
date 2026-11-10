@@ -1,8 +1,8 @@
 [workspace]
 members = [
-    "niri-config",
+    "conchy-wm-config",
     "conchy-ipc",
-    "niri-visual-tests",
+    "conchy-visual-tests",
 ]
 
 [workspace.package]
@@ -81,7 +81,7 @@ keyframe = { version = "1.1.1", default-features = false }
 libc = "0.2.189"
 libdisplay-info = { version = "0.3.0", features = ["v0_2"] }
 log = { version = "0.4", features = ["max_level_trace", "release_max_level_debug"] }
-niri-config = { version = "26.4.0", path = "niri-config" }
+conchy-wm-config = { version = "26.4.0", path = "conchy-wm-config" }
 conchy-ipc = { version = "26.4.0", path = "conchy-ipc", features = ["clap"] }
 ordered-float = "5"
 pango = { version = "0.21.5", features = ["v1_44"] }
@@ -163,7 +163,7 @@ debug = "line-tables-only"
 overflow-checks = true
 lto = "thin"
 
-[profile.release.package.niri-config]
+[profile.release.package.conchy-wm-config]
 # knuffel with chomsky generates a metric ton of debuginfo.
 debug = false
 

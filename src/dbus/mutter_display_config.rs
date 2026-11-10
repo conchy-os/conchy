@@ -14,7 +14,7 @@ use crate::utils::is_laptop_panel;
 use crate::utils::scale::supported_scales;
 
 pub struct DisplayConfig {
-    to_niri: calloop::channel::Sender<HashMap<String, Option<niri_config::Output>>>,
+    to_niri: calloop::channel::Sender<HashMap<String, Option<conchy_wm_config::Output>>>,
     ipc_outputs: Arc<Mutex<IpcOutputMap>>,
 }
 
@@ -193,10 +193,10 @@ impl DisplayConfig {
                 }
                 new_conf.insert(
                     connector.clone(),
-                    Some(niri_config::Output {
+                    Some(conchy_wm_config::Output {
                         off: false,
                         name: connector,
-                        scale: Some(niri_config::FloatOrInt(requested_config.scale)),
+                        scale: Some(conchy_wm_config::FloatOrInt(requested_config.scale)),
                         transform: match requested_config.transform {
                             0 => conchy_ipc::Transform::Normal,
                             1 => conchy_ipc::Transform::_90,
@@ -212,11 +212,11 @@ impl DisplayConfig {
                                 )))
                             }
                         },
-                        position: Some(niri_config::Position {
+                        position: Some(conchy_wm_config::Position {
                             x: requested_config.x,
                             y: requested_config.y,
                         }),
-                        mode: Some(niri_config::output::Mode {
+                        mode: Some(conchy_wm_config::output::Mode {
                             custom: false,
                             mode: conchy_ipc::ConfiguredMode::from_str(&mode).map_err(|e| {
                                 zbus::fdo::Error::Failed(format!(
@@ -282,7 +282,7 @@ impl DisplayConfig {
 
 impl DisplayConfig {
     pub fn new(
-        to_niri: calloop::channel::Sender<HashMap<String, Option<niri_config::Output>>>,
+        to_niri: calloop::channel::Sender<HashMap<String, Option<conchy_wm_config::Output>>>,
         ipc_outputs: Arc<Mutex<IpcOutputMap>>,
     ) -> Self {
         Self {

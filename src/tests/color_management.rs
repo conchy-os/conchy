@@ -3,8 +3,8 @@
 //! `use_system_lib`, a panic in a server dispatch handler unwinds across the C libwayland frame and
 //! aborts the process — so any handler panic shows up here as a failing test.
 
-use niri_config::output::Hdr;
-use niri_config::{Config, Output};
+use conchy_wm_config::output::Hdr;
+use conchy_wm_config::{Config, Output};
 use smithay::reexports::wayland_protocols::wp::color_management::v1::client::wp_color_manager_v1::{
     Primaries, RenderIntent, TransferFunction,
 };
@@ -95,7 +95,7 @@ fn create_parametric_hdr_description_like_mpv() {
 /// Fixture whose output is `hdr mode="on"` with backend HDR capabilities injected, simulating an
 /// HDR-capable monitor on the TTY backend.
 fn fixture_with_hdr_mode_on() -> Fixture {
-    use niri_config::output::HdrMode;
+    use conchy_wm_config::output::HdrMode;
 
     let mut config = Config::default();
     config.outputs.0.push(Output {
@@ -166,7 +166,7 @@ fn feedback_preferred_is_pq_with_mode_on() {
 
 #[test]
 fn preferred_rebroadcast_on_runtime_hdr_toggle() {
-    use niri_config::output::HdrMode;
+    use conchy_wm_config::output::HdrMode;
 
     // Start with HDR off in the config, on an HDR-capable output (caps injected like the TTY
     // backend would). Toggling the `hdr` node at runtime (as a config reload does) must notify

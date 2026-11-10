@@ -7,7 +7,7 @@ use std::mem;
 use std::sync::{Arc, Mutex};
 
 use anyhow::Context as _;
-use niri_config::OutputName;
+use conchy_wm_config::OutputName;
 use smithay::backend::allocator::dmabuf::Dmabuf;
 use smithay::backend::drm::DrmNode;
 use smithay::backend::egl::native::EGLSurfacelessDisplay;
@@ -62,7 +62,7 @@ impl Headless {
 
     pub fn add_output(&mut self, niri: &mut Niri, n: u8, size: (u16, u16)) {
         let connector = format!("headless-{n}");
-        let make = "niri".to_string();
+        let make = "conchy".to_string();
         let model = "headless".to_string();
         let serial = n.to_string();
 

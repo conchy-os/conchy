@@ -1,7 +1,7 @@
 [package]
-name = "niri-visual-tests"
+name = "conchy-visual-tests"
 version.workspace = true
-description.workspace = true
+description = "Visual tests for Conchy WM"
 authors.workspace = true
 license.workspace = true
 edition.workspace = true
@@ -12,7 +12,7 @@ adw = { version = "0.8.1", package = "libadwaita", features = ["v1_4"] }
 anyhow.workspace = true
 gtk = { version = "0.10.3", package = "gtk4", features = ["v4_12"] }
 conchy-wm = { version = "26.4.0", path = ".." }
-niri-config = { version = "26.4.0", path = "../niri-config" }
+conchy-wm-config = { version = "26.4.0", path = "../conchy-wm-config" }
 smithay.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true

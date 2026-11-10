@@ -49,7 +49,7 @@
 //! This crate defines the following features:
 //! - `json-schema`: derives the [schemars](https://lib.rs/crates/schemars) `JsonSchema` trait for
 //!   the types.
-//! - `clap`: derives the clap CLI parsing traits for some types. Used internally by niri itself.
+//! - `clap`: derives the clap CLI parsing traits for some types. Used internally by conchy-wm itself.
 #![warn(missing_docs)]
 
 use std::collections::HashMap;
@@ -61,11 +61,11 @@ use serde::{Deserialize, Serialize};
 pub mod socket;
 pub mod state;
 
-/// Request from client to niri.
+/// Request from client to conchy-wm.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 pub enum Request {
-    /// Request the version string for the running niri instance.
+    /// Request the version string for the running conchy-wm instance.
     Version,
     /// Request information about connected outputs.
     Outputs,
@@ -121,7 +121,7 @@ pub enum Request {
     Casts,
 }
 
-/// Reply from niri to client.
+/// Reply from conchy-wm to client.
 ///
 /// Every request gets one reply.
 ///
@@ -131,13 +131,13 @@ pub enum Request {
 /// * Otherwise, it will be `Reply::Ok(response)` with one of the other [`Response`] variants.
 pub type Reply = Result<Response, String>;
 
-/// Successful response from niri to client.
+/// Successful response from conchy-wm to client.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 pub enum Response {
     /// A request that does not need a response was handled successfully.
     Handled,
-    /// The version string for the running niri instance.
+    /// The version string for the running conchy-wm instance.
     Version(String),
     /// Information about connected outputs.
     ///
@@ -183,16 +183,16 @@ pub struct PickedColor {
     pub rgb: [f64; 3],
 }
 
-/// Actions that niri can perform.
-// Variants in this enum should match the spelling of the ones in niri-config. Most, but not all,
-// variants from niri-config should be present here.
+/// Actions that conchy-wm can perform.
+// Variants in this enum should match the spelling of the ones in conchy-wm-config. Most, but not all,
+// variants from conchy-wm-config should be present here.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[cfg_attr(feature = "clap", derive(clap::Parser))]
 #[cfg_attr(feature = "clap", command(subcommand_value_name = "ACTION"))]
 #[cfg_attr(feature = "clap", command(subcommand_help_heading = "Actions"))]
 #[cfg_attr(feature = "json-schema", derive(schemars::JsonSchema))]
 pub enum Action {
-    /// Exit niri.
+    /// Exit conchy-wm.
     Quit {
         /// Skip the "Press Enter to confirm" prompt.
         #[cfg_attr(feature = "clap", arg(short, long))]
@@ -959,7 +959,7 @@ pub enum Action {
     /// Reload the config file.
     ///
     /// Can be useful for scripts changing the config file, to avoid waiting the small duration for
-    /// niri's config file watcher to notice the changes.
+    /// conchy-wm's config file watcher to notice the changes.
     LoadConfigFile {
         /// Path of a new config file to load.
         ///
@@ -1031,9 +1031,9 @@ pub enum ColumnDisplay {
     Tabbed,
 }
 
-/// Output actions that niri can perform.
-// Variants in this enum should match the spelling of the ones in niri-config. Most thigs from
-// niri-config should be present here.
+/// Output actions that conchy-wm can perform.
+// Variants in this enum should match the spelling of the ones in conchy-wm-config. Most thigs from
+// conchy-wm-config should be present here.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[cfg_attr(feature = "clap", derive(clap::Parser))]
 #[cfg_attr(feature = "clap", command(subcommand_value_name = "ACTION"))]
@@ -1048,7 +1048,7 @@ pub enum OutputAction {
     Mode {
         /// Mode to set, or "auto" for automatic selection.
         ///
-        /// Run `niri msg outputs` to see the available modes.
+        /// Run `conchy msg outputs` to see the available modes.
         #[cfg_attr(feature = "clap", arg())]
         mode: ModeToSet,
     },
@@ -1389,7 +1389,7 @@ pub struct Window {
     /// the size fields alone cannot tell you apart from fullscreen.
     ///
     /// Windows in *windowed* fullscreen report `false`: they carry the fullscreen state as far as
-    /// the client is concerned, but niri lays them out as ordinary tiles.
+    /// the client is concerned, but conchy-wm lays them out as ordinary tiles.
     ///
     /// A minimized window keeps whatever fullscreen state it will be restored with, so this can be
     /// `true` together with `is_minimized`.
@@ -1424,7 +1424,7 @@ pub struct Timestamp {
 /// Position- and size-related properties of a [`Window`].
 ///
 /// Optional properties will be unset for some windows, do not rely on them being present. Whether
-/// some optional properties are present or absent for certain window types may change across niri
+/// some optional properties are present or absent for certain window types may change across conchy-wm
 /// releases.
 ///
 /// All sizes and positions are in *logical pixels* unless stated otherwise. Logical sizes may be
@@ -1450,14 +1450,14 @@ pub struct WindowLayout {
     pub tile_size: (f64, f64),
     /// Size of the window's visual geometry itself.
     ///
-    /// Does not include niri decorations like borders.
+    /// Does not include conchy-wm decorations like borders.
     ///
     /// Currently, Wayland toplevel windows can only be integer-sized in logical pixels, even
     /// though it doesn't necessarily align to physical pixels.
     pub window_size: (i32, i32),
     /// Tile position within the current view of the workspace.
     ///
-    /// This is the same "workspace view" as in gradients' `relative-to` in the niri config.
+    /// This is the same "workspace view" as in gradients' `relative-to` in the conchy-wm config.
     pub tile_pos_in_workspace_view: Option<(f64, f64)>,
     /// Location of the window's visual geometry within its tile.
     ///
@@ -1491,7 +1491,7 @@ pub struct Workspace {
     pub id: u64,
     /// Index of the workspace on its monitor.
     ///
-    /// This is the same index you can use for requests like `niri msg action focus-workspace`.
+    /// This is the same index you can use for requests like `conchy msg action focus-workspace`.
     ///
     /// This index *will change* as you move and re-order workspace. It is merely the workspace's
     /// current position on its monitor. Workspaces on different monitors can have the same index.

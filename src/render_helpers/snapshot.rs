@@ -1,6 +1,6 @@
 use std::cell::OnceCell;
 
-use niri_config::BlockOutFrom;
+use conchy_wm_config::BlockOutFrom;
 use smithay::backend::allocator::Fourcc;
 use smithay::backend::renderer::element::{Kind, RenderElement};
 use smithay::utils::{Logical, Physical, Point, Rectangle, Scale, Size, Transform};

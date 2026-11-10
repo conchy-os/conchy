@@ -1,5 +1,5 @@
 use niri::render_helpers::border::BorderRenderElement;
-use niri_config::{
+use conchy_wm_config::{
     Color, CornerRadius, GradientColorSpace, GradientInterpolation, HueInterpolation,
 };
 use smithay::backend::renderer::element::RenderElement;
@@ -8,22 +8,22 @@ use smithay::utils::{Physical, Point, Rectangle, Size};
 
 use super::{Args, TestCase};
 
-pub struct GradientOklchLonger {
+pub struct GradientOklchIncreasing {
     gradient_format: GradientInterpolation,
 }
 
-impl GradientOklchLonger {
+impl GradientOklchIncreasing {
     pub fn new(_args: Args) -> Self {
         Self {
             gradient_format: GradientInterpolation {
                 color_space: GradientColorSpace::Oklch,
-                hue_interpolation: HueInterpolation::Longer,
+                hue_interpolation: HueInterpolation::Increasing,
             },
         }
     }
 }
 
-impl TestCase for GradientOklchLonger {
+impl TestCase for GradientOklchIncreasing {
     fn render(
         &mut self,
         _renderer: &mut GlesRenderer,

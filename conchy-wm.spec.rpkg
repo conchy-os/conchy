@@ -26,10 +26,10 @@
 
 %global version {{{ git_dir_version }}}
 
-Name:           niri
+Name:           conchy-wm
 Version:        %{version}
 Release:        1%{?dist}
-Summary:        Scrollable-tiling Wayland compositor
+Summary:        Scrollable-tiling Wayland compositor for Conchy OS
 
 SourceLicense:  GPL-3.0-or-later
 
@@ -136,19 +136,15 @@ target/rpm/niri completions zsh > ./_niri
 %install
 %cargo_install
 
-install -Dm755 -t %{buildroot}%{_bindir} ./resources/niri-session
-install -Dm644 -t %{buildroot}%{_datadir}/wayland-sessions ./resources/niri.desktop
-install -Dm644 -t %{buildroot}%{_datadir}/xdg-desktop-portal ./resources/niri-portals.conf
-install -Dm644 -t %{buildroot}%{_userunitdir} ./resources/niri.service
-install -Dm644 -t %{buildroot}%{_userunitdir} ./resources/niri-shutdown.target
+install -Dm644 -t %{buildroot}%{_datadir}/xdg-desktop-portal ./resources/conchy-portals.conf
 
-install -Dm644 -t %{buildroot}%{bash_completions_dir} ./niri
-install -Dm644 -t %{buildroot}%{fish_completions_dir} ./niri.fish
-install -Dm644 -t %{buildroot}%{zsh_completions_dir} ./_niri
+install -Dm644 -t %{buildroot}%{bash_completions_dir} ./conchy-wm
+install -Dm644 -t %{buildroot}%{fish_completions_dir} ./conchy-wm.fish
+install -Dm644 -t %{buildroot}%{zsh_completions_dir} ./_conchy-wm
 
 %if %{with check}
 %check
-%cargo_test -- --workspace --exclude niri-visual-tests
+%cargo_test -- --workspace --exclude conchy-visual-tests
 %endif
 
 %files
@@ -156,16 +152,12 @@ install -Dm644 -t %{buildroot}%{zsh_completions_dir} ./_niri
 %doc README.md
 %doc resources/default-config.kdl
 %doc docs/wiki
-%{_bindir}/niri
-%{_bindir}/niri-session
-%{_datadir}/wayland-sessions/niri.desktop
+%{_bindir}/conchy-wm
 %dir %{_datadir}/xdg-desktop-portal
-%{_datadir}/xdg-desktop-portal/niri-portals.conf
-%{_userunitdir}/niri.service
-%{_userunitdir}/niri-shutdown.target
-%{bash_completions_dir}/niri
-%{fish_completions_dir}/niri.fish
-%{zsh_completions_dir}/_niri
+%{_datadir}/xdg-desktop-portal/conchy-portals.conf
+%{bash_completions_dir}/conchy-wm
+%{fish_completions_dir}/conchy-wm.fish
+%{zsh_completions_dir}/_conchy-wm
 
 %changelog
 {{{ git_dir_changelog }}}

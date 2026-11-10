@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use glam::{Mat3, Vec2};
-use niri_config::CornerRadius;
+use conchy_wm_config::CornerRadius;
 use smithay::backend::renderer::element::{Element, Id, RenderElement};
 use smithay::backend::renderer::gles::{GlesError, GlesFrame, GlesRenderer, Uniform};
 use smithay::backend::renderer::utils::{CommitCounter, OpaqueRegions};

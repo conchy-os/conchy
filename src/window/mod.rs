@@ -1,8 +1,8 @@
 use std::cmp::{max, min};
 
-use niri_config::utils::MergeWith as _;
-use niri_config::window_rule::{Match, OnXdgActivate, WindowRule};
-use niri_config::{
+use conchy_wm_config::utils::MergeWith as _;
+use conchy_wm_config::window_rule::{Match, OnXdgActivate, WindowRule};
+use conchy_wm_config::{
     BackgroundEffect, BlockOutFrom, BorderRule, CornerRadius, FloatingPosition, PresetSize,
     ResolvedPopupsRules, ShadowRule, TabIndicatorRule,
 };

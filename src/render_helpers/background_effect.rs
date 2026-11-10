@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 
-use niri_config::CornerRadius;
+use conchy_wm_config::CornerRadius;
 use smithay::backend::renderer::element::RenderElement;
 use smithay::backend::renderer::vulkan::{VulkanError, VulkanFrame, VulkanRenderer};
 use smithay::utils::user_data::UserDataMap;
@@ -29,7 +29,7 @@ pub struct BackgroundEffect {
     /// Stored here in addition to `RenderParams` to damage when it changes.
     // FIXME: would be good to remove this duplication of radius.
     corner_radius: CornerRadius,
-    blur_config: niri_config::Blur,
+    blur_config: conchy_wm_config::Blur,
     options: Options,
 }
 
@@ -154,7 +154,7 @@ impl BackgroundEffect {
             nonxray: FramebufferEffect::new(),
             damage: ExtraDamage::new(),
             corner_radius: CornerRadius::default(),
-            blur_config: niri_config::Blur::default(),
+            blur_config: conchy_wm_config::Blur::default(),
             options: Options::default(),
         }
     }
@@ -165,7 +165,7 @@ impl BackgroundEffect {
         self.nonxray.damage();
     }
 
-    pub fn update_config(&mut self, config: niri_config::Blur) {
+    pub fn update_config(&mut self, config: conchy_wm_config::Blur) {
         if self.blur_config == config {
             return;
         }
@@ -178,7 +178,7 @@ impl BackgroundEffect {
     pub fn update_render_elements(
         &mut self,
         corner_radius: CornerRadius,
-        effect: niri_config::BackgroundEffect,
+        effect: conchy_wm_config::BackgroundEffect,
         has_blur_region: bool,
     ) {
         // If the surface explicitly requests a blur region, default blur to true.
@@ -357,9 +357,9 @@ pub fn render_for_tile<R: NiriRenderer>(
     surface: &WlSurface,
     surface_off: Point<f64, Logical>,
     surface_anim_scale: Scale<f64>,
-    blur_config: niri_config::Blur,
+    blur_config: conchy_wm_config::Blur,
     radius: CornerRadius,
-    effect: niri_config::BackgroundEffect,
+    effect: conchy_wm_config::BackgroundEffect,
     should_block_out: bool,
     xray_pos: XrayPos,
     push: &mut dyn FnMut(BackgroundEffectElement),

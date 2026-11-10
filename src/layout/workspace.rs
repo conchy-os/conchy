@@ -2,8 +2,8 @@ use std::cmp::max;
 use std::rc::Rc;
 use std::time::Duration;
 
-use niri_config::utils::MergeWith as _;
-use niri_config::{
+use conchy_wm_config::utils::MergeWith as _;
+use conchy_wm_config::{
     CenterFocusedColumn, CornerRadius, OutputName, PresetSize, Workspace as WorkspaceConfig,
 };
 use conchy_ipc::{ColumnDisplay, PositionChange, SizeChange, WindowLayout};
@@ -108,7 +108,7 @@ pub struct Workspace<W: LayoutElement> {
     pub(super) name: Option<String>,
 
     /// Layout config overrides for this workspace.
-    layout_config: Option<niri_config::LayoutPart>,
+    layout_config: Option<conchy_wm_config::LayoutPart>,
 
     /// Unique ID of this workspace.
     id: WorkspaceId,
@@ -433,7 +433,7 @@ impl<W: LayoutElement> Workspace<W> {
         self.options = options;
     }
 
-    pub fn update_layout_config(&mut self, layout_config: Option<niri_config::LayoutPart>) {
+    pub fn update_layout_config(&mut self, layout_config: Option<conchy_wm_config::LayoutPart>) {
         if self.layout_config == layout_config {
             return;
         }
@@ -641,7 +641,7 @@ impl<W: LayoutElement> Workspace<W> {
         width: ColumnWidth,
         is_full_width: bool,
         is_floating: bool,
-        anim: Option<niri_config::Animation>,
+        anim: Option<conchy_wm_config::Animation>,
     ) {
         self.enter_output_for_window(tile.window());
         tile.restore_to_floating = is_floating;
@@ -754,7 +754,7 @@ impl<W: LayoutElement> Workspace<W> {
         &mut self,
         column: Column<W>,
         activate: bool,
-        anim: Option<niri_config::Animation>,
+        anim: Option<conchy_wm_config::Animation>,
     ) {
         for (tile, _) in column.tiles() {
             self.enter_output_for_window(tile.window());
@@ -2040,7 +2040,7 @@ impl<W: LayoutElement> Workspace<W> {
         self.working_area
     }
 
-    pub fn layout_config(&self) -> Option<&niri_config::LayoutPart> {
+    pub fn layout_config(&self) -> Option<&conchy_wm_config::LayoutPart> {
         self.layout_config.as_ref()
     }
 
@@ -2136,14 +2136,14 @@ pub(super) fn compute_working_area(output: &Output) -> Rectangle<f64, Logical> {
 }
 
 fn compute_workspace_shadow_config(
-    config: niri_config::WorkspaceShadow,
+    config: conchy_wm_config::WorkspaceShadow,
     view_size: Size<f64, Logical>,
-) -> niri_config::Shadow {
+) -> conchy_wm_config::Shadow {
     // Gaps between workspaces are a multiple of the view height, so shadow settings should also be
     // normalized to the view height to prevent them from overlapping on lower resolutions.
     let norm = view_size.h / 1080.;
 
-    let mut config = niri_config::Shadow::from(config);
+    let mut config = conchy_wm_config::Shadow::from(config);
     config.softness *= norm;
     config.spread *= norm;
     config.offset.x.0 *= norm;

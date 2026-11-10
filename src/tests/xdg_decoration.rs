@@ -1,4 +1,4 @@
-use niri_config::Config;
+use conchy_wm_config::Config;
 use smithay::reexports::wayland_protocols::xdg::decoration::zv1::client::zxdg_toplevel_decoration_v1::Mode;
 use smithay::reexports::wayland_protocols::xdg::decoration::zv1::server::zxdg_toplevel_decoration_v1::Mode as ServerMode;
 

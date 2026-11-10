@@ -1,27 +1,27 @@
 use niri::render_helpers::border::BorderRenderElement;
-use niri_config::{Color, CornerRadius, GradientColorSpace, GradientInterpolation};
+use conchy_wm_config::{Color, CornerRadius, GradientColorSpace, GradientInterpolation};
 use smithay::backend::renderer::element::RenderElement;
 use smithay::backend::renderer::gles::GlesRenderer;
 use smithay::utils::{Physical, Point, Rectangle, Size};
 
 use super::{Args, TestCase};
 
-pub struct GradientOklabAlpha {
+pub struct GradientSrgbLinearAlpha {
     gradient_format: GradientInterpolation,
 }
 
-impl GradientOklabAlpha {
+impl GradientSrgbLinearAlpha {
     pub fn new(_args: Args) -> Self {
         Self {
             gradient_format: GradientInterpolation {
-                color_space: GradientColorSpace::Oklab,
+                color_space: GradientColorSpace::SrgbLinear,
                 hue_interpolation: Default::default(),
             },
         }
     }
 }
 
-impl TestCase for GradientOklabAlpha {
+impl TestCase for GradientSrgbLinearAlpha {
     fn render(
         &mut self,
         _renderer: &mut GlesRenderer,

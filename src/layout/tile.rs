@@ -2,8 +2,8 @@ use core::f64;
 use std::cell::OnceCell;
 use std::rc::Rc;
 
-use niri_config::utils::MergeWith as _;
-use niri_config::{Color, CornerRadius, GradientInterpolation};
+use conchy_wm_config::utils::MergeWith as _;
+use conchy_wm_config::{Color, CornerRadius, GradientInterpolation};
 use conchy_ipc::WindowLayout;
 use smithay::backend::allocator::Fourcc;
 use smithay::backend::renderer::element::{Element, Kind, RenderElement};
@@ -594,7 +594,7 @@ impl<W: LayoutElement> Tile<W> {
     pub fn animate_move_from_with_config(
         &mut self,
         from: Point<f64, Logical>,
-        config: niri_config::Animation,
+        config: conchy_wm_config::Animation,
     ) {
         self.animate_move_x_from_with_config(from.x, config);
         self.animate_move_y_from_with_config(from.y, config);
@@ -604,7 +604,7 @@ impl<W: LayoutElement> Tile<W> {
         self.animate_move_x_from_with_config(from, self.options.animations.window_movement.0);
     }
 
-    pub fn animate_move_x_from_with_config(&mut self, from: f64, config: niri_config::Animation) {
+    pub fn animate_move_x_from_with_config(&mut self, from: f64, config: conchy_wm_config::Animation) {
         let current_offset = self.render_offset().x;
 
         // Preserve the previous config if ongoing.
@@ -628,7 +628,7 @@ impl<W: LayoutElement> Tile<W> {
         self.animate_move_y_from_with_config(from, self.options.animations.window_movement.0);
     }
 
-    pub fn animate_move_y_from_with_config(&mut self, from: f64, config: niri_config::Animation) {
+    pub fn animate_move_y_from_with_config(&mut self, from: f64, config: conchy_wm_config::Animation) {
         let current_offset = self.render_offset().y;
 
         // Preserve the previous config if ongoing.
@@ -670,7 +670,7 @@ impl<W: LayoutElement> Tile<W> {
         }
     }
 
-    pub fn animate_alpha(&mut self, from: f64, to: f64, config: niri_config::Animation) {
+    pub fn animate_alpha(&mut self, from: f64, to: f64, config: conchy_wm_config::Animation) {
         let from = from.clamp(0., 1.);
         let to = to.clamp(0., 1.);
 

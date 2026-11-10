@@ -1,6 +1,6 @@
 # This flake file is community maintained
 {
-  description = "Niri: A scrollable-tiling Wayland compositor.";
+  description = "Conchy WM: A scrollable-tiling Wayland compositor for Conchy OS.";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
@@ -11,7 +11,7 @@
     }:
     let
       revision = self.shortRev or self.dirtyShortRev or "unknown";
-      niri-package =
+      conchy-wm-package =
         {
           lib,
           cairo,
@@ -30,21 +30,21 @@
           wayland,
           installShellFiles,
           withDbus ? true,
-          withSystemd ? true,
+          withSystemd ? false,
           withScreencastSupport ? true,
           withDinit ? false,
         }:
 
         rustPlatform.buildRustPackage {
-          pname = "niri";
+          pname = "conchy-wm";
           version = revision;
 
           src = lib.fileset.toSource {
             root = ./.;
             fileset = lib.fileset.unions [
-              ./niri-config
-              ./niri-ipc
-              ./niri-visual-tests
+              ./conchy-wm-config
+              ./conchy-ipc
+              ./conchy-visual-tests
               ./resources
               ./src
               ./Cargo.toml
@@ -54,9 +54,6 @@
           };
 
           postPatch = ''
-            patchShebangs resources/niri-session
-            substituteInPlace resources/niri.service \
-              --replace-fail 'ExecStart=niri' "ExecStart=$out/bin/niri"
           '';
 
           cargoLock = {
@@ -115,18 +112,13 @@
 
           postInstall =
             ''
-              installShellCompletion --cmd niri \
-                --bash <($out/bin/niri completions bash) \
-                --fish <($out/bin/niri completions fish) \
-                --nushell <($out/bin/niri completions nushell) \
-                --zsh <($out/bin/niri completions zsh)
+              installShellCompletion --cmd conchy-wm \
+                --bash <($out/bin/conchy-wm completions bash) \
+                --fish <($out/bin/conchy-wm completions fish) \
+                --nushell <($out/bin/conchy-wm completions nushell) \
+                --zsh <($out/bin/conchy-wm completions zsh)
 
-              install -Dm644 resources/niri.desktop -t $out/share/wayland-sessions
-              install -Dm644 resources/niri-portals.conf -t $out/share/xdg-desktop-portal
-            ''
-            + lib.optionalString withSystemd ''
-              install -Dm755 resources/niri-session $out/bin/niri-session
-              install -Dm644 resources/niri{.service,-shutdown.target} -t $out/lib/systemd/user
+              install -Dm644 resources/conchy-portals.conf -t $out/share/xdg-desktop-portal
             '';
 
           env = {
@@ -148,10 +140,10 @@
           };
 
           meta = {
-            description = "Scrollable-tiling Wayland compositor";
-            homepage = "https://github.com/niri-wm/niri";
+            description = "Scrollable-tiling Wayland compositor for Conchy OS";
+            homepage = "https://github.com/conchy-os/conchy-wm";
             license = lib.licenses.gpl3Only;
-            mainProgram = "niri";
+            mainProgram = "conchy-wm";
             platforms = lib.platforms.linux;
           };
         };
@@ -166,7 +158,7 @@
     {
       checks = forAllSystems (system: {
         # We use the debug build here to save a bit of time
-        inherit (self.packages.${system}) niri-debug;
+        inherit (self.packages.${system}) conchy-wm-debug;
       });
 
       devShells = forAllSystems (
@@ -174,7 +166,7 @@
         let
           pkgs = nixpkgsFor.${system};
           rustfmt' = pkgs.rustfmt.override { asNightly = true; };
-          inherit (self.packages.${system}) niri;
+          inherit (self.packages.${system}) conchy-wm;
         in
         {
           default = pkgs.mkShell {
@@ -191,11 +183,11 @@
             nativeBuildInputs = [
               pkgs.rustPlatform.bindgenHook
               pkgs.pkg-config
-              pkgs.wrapGAppsHook4 # For `niri-visual-tests`
+              pkgs.wrapGAppsHook4 # For `conchy-visual-tests`
             ];
 
-            buildInputs = niri.buildInputs ++ [
-              pkgs.libadwaita # For `niri-visual-tests`
+            buildInputs = conchy-wm.buildInputs ++ [
+              pkgs.libadwaita # For `conchy-visual-tests`
             ];
 
             env = {
@@ -204,7 +196,7 @@
               # in the package expression
               #
               # This should only be set with `RUSTFLAGS="$RUSTFLAGS -C your-flags"`
-              RUSTFLAGS = niri.RUSTFLAGS;
+              RUSTFLAGS = conchy-wm.RUSTFLAGS;
             };
           };
         }
@@ -215,17 +207,12 @@
       packages = forAllSystems (
         system:
         let
-          niri = nixpkgsFor.${system}.callPackage niri-package { };
+          conchy-wm = nixpkgsFor.${system}.callPackage conchy-wm-package { };
         in
         {
-          inherit niri;
+          inherit conchy-wm;
 
-          # NOTE: This is for development purposes only
-          #
-          # It is primarily to help with quickly iterating on
-          # changes made to the above expression - though it is
-          # also not stripped in order to better debug niri itself
-          niri-debug = niri.overrideAttrs (
+          conchy-wm-debug = conchy-wm.overrideAttrs (
             newAttrs: oldAttrs: {
               pname = oldAttrs.pname + "-debug";
 
@@ -236,12 +223,12 @@
             }
           );
 
-          default = niri;
+          default = conchy-wm;
         }
       );
 
       overlays.default = final: _: {
-        niri = final.callPackage niri-package { };
+        conchy-wm = final.callPackage conchy-wm-package { };
       };
     };
 }
