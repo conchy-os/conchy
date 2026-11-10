@@ -213,6 +213,7 @@ impl ClosingWindow {
 
                 let mut location = self.pos + offset;
                 location.x -= view_rect.loc.x;
+                location.y -= view_rect.loc.y;
                 let elem = RelocateRenderElement::from_element(
                     elem,
                     location.to_physical_precise_round(scale),
@@ -295,6 +296,7 @@ impl ClosingWindow {
 
         let mut location = self.pos + offset;
         location.x -= view_rect.loc.x;
+        location.y -= view_rect.loc.y;
         let elem = RelocateRenderElement::from_element(
             elem,
             location.to_physical_precise_round(scale),

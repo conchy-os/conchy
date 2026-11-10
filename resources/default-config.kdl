@@ -111,6 +111,18 @@ input {
 // Find more information on the wiki:
 // https://github.com/conchy-os/conchy-wm/Configuration:-Layout
 layout {
+    // Primary orientation of workspace columns.
+    // - "horizontal" (default): columns are placed side-by-side horizontally.
+    // - "vertical": columns are placed top-to-bottom vertically (scrolling up/down).
+    //   This is ideal for vertical / portrait monitors.
+    // Can also be set per-output or per-workspace, e.g.:
+    // output "DP-1" {
+    //     layout {
+    //         main-axis "vertical"
+    //     }
+    // }
+    // main-axis "horizontal"
+
     // Set gaps around windows in logical pixels.
     gaps 16
 
