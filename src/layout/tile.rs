@@ -98,6 +98,18 @@ pub struct Tile<W: LayoutElement> {
     /// The animation of the tile's opacity.
     pub(super) alpha_animation: Option<AlphaAnimation>,
 
+    /// Whether this tile is currently active.
+    is_active: bool,
+
+    /// Animation for dimming the window when it becomes inactive.
+    dim_animation: Option<DimAnimation>,
+
+    /// Dimming render element with corner radius shader.
+    dim_element: BorderRenderElement,
+
+    /// Fallback solid color buffer for dimming.
+    dim_buffer: SolidColorBuffer,
+
     /// Offset during the initial interactive move rubberband.
     pub(super) interactive_move_offset: Point<f64, Logical>,
 
@@ -179,6 +191,11 @@ pub(super) struct AlphaAnimation {
     offscreen: OffscreenBuffer,
 }
 
+#[derive(Debug)]
+struct DimAnimation {
+    anim: Animation,
+}
+
 impl<W: LayoutElement> Tile<W> {
     pub fn new(
         window: W,
@@ -210,6 +227,10 @@ impl<W: LayoutElement> Tile<W> {
             move_x_animation: None,
             move_y_animation: None,
             alpha_animation: None,
+            is_active: true,
+            dim_animation: None,
+            dim_element: BorderRenderElement::empty(),
+            dim_buffer: SolidColorBuffer::new((0., 0.), [0., 0., 0., 1.]),
             interactive_move_offset: Point::from((0., 0.)),
             unmap_snapshot: None,
             rounded_corner_damage: Default::default(),
@@ -264,6 +285,7 @@ impl<W: LayoutElement> Tile<W> {
         self.border.update_shaders();
         self.focus_ring.update_shaders();
         self.shadow.update_shaders();
+        self.dim_element.damage_all();
     }
 
     pub fn update_window(&mut self) {
@@ -444,10 +466,18 @@ impl<W: LayoutElement> Tile<W> {
                 self.alpha_animation = None;
             }
         }
+
+        if let Some(dim) = &mut self.dim_animation {
+            if dim.anim.is_done() {
+                self.dim_animation = None;
+            }
+        }
     }
 
     pub fn are_animations_ongoing(&self) -> bool {
-        self.are_transitions_ongoing() || self.window.rules().baba_is_float == Some(true)
+        self.are_transitions_ongoing()
+            || self.dim_animation.as_ref().is_some_and(|dim| !dim.anim.is_done())
+            || self.window.rules().baba_is_float == Some(true)
     }
 
     pub fn are_transitions_ongoing(&self) -> bool {
@@ -471,8 +501,56 @@ impl<W: LayoutElement> Tile<W> {
                 .is_some_and(|anim| anim.is_between_workspaces)
     }
 
+    pub fn dim_value(&self) -> f32 {
+        if let Some(dim) = &self.dim_animation {
+            dim.anim.clamped_value().clamp(0., 1.) as f32
+        } else if self.is_active {
+            0.0
+        } else {
+            self.window
+                .rules()
+                .inactive_dim
+                .or(self.options.layout.inactive_dim)
+                .unwrap_or(0.0)
+                .clamp(0.0, 1.0)
+        }
+    }
+
     pub fn update_render_elements(&mut self, is_active: bool, view_rect: Rectangle<f64, Logical>) {
         let rules = self.window.rules();
+
+        if self.is_active != is_active {
+            let current_dim = self.dim_value();
+            let target_dim = if is_active {
+                0.0
+            } else {
+                rules
+                    .inactive_dim
+                    .or(self.options.layout.inactive_dim)
+                    .unwrap_or(0.0)
+                    .clamp(0.0, 1.0)
+            };
+
+            if (current_dim - target_dim).abs() > 0.001 {
+                if self.options.animations.off || self.options.animations.window_movement.0.off {
+                    self.dim_animation = None;
+                } else {
+                    let anim_config = self.options.animations.window_movement.0.clone();
+                    self.dim_animation = Some(DimAnimation {
+                        anim: Animation::new(
+                            self.clock.clone(),
+                            current_dim as f64,
+                            target_dim as f64,
+                            0.,
+                            anim_config,
+                        ),
+                    });
+                }
+            } else {
+                self.dim_animation = None;
+            }
+            self.is_active = is_active;
+        }
         let animated_tile_size = self.animated_tile_size();
         let expanded_progress = self.expanded_progress();
 
@@ -552,6 +630,34 @@ impl<W: LayoutElement> Tile<W> {
         );
 
         self.fullscreen_backdrop.resize(animated_tile_size);
+
+        let dim_size = self.animated_window_size();
+        let fullscreen_progress = self.fullscreen_progress();
+        let effective_dim = self.dim_value() * (1. - fullscreen_progress as f32);
+        let dim_radius = self
+            .window
+            .geometry_corner_radius()
+            .scaled_by(1. - expanded_progress as f32)
+            .fit_to(dim_size.w as f32, dim_size.h as f32);
+        let black = Color::from_array_unpremul([0., 0., 0., 1.]);
+
+        self.dim_element.update(
+            dim_size,
+            Rectangle::from_size(dim_size),
+            GradientInterpolation::default(),
+            black,
+            black,
+            0.,
+            Rectangle::from_size(dim_size),
+            0.,
+            dim_radius,
+            self.scale as f32,
+            effective_dim,
+        );
+
+        self.dim_buffer.resize(dim_size);
+        self.dim_buffer
+            .set_color(Color::from_array_unpremul([0., 0., 0., effective_dim]));
     }
 
     pub fn scale(&self) -> f64 {
@@ -1125,6 +1231,24 @@ impl<W: LayoutElement> Tile<W> {
             xray_pos,
             &mut |elem| push(elem.into()),
         );
+
+        // OLED Black Dimming: inactive window dimming / blackout.
+        let effective_dim = self.dim_value() * (1. - fullscreen_progress as f32);
+        if effective_dim > 0.001 {
+            let dim_geo = Rectangle::new(window_render_loc, animated_window_size);
+            if BorderRenderElement::has_shader(ctx.renderer) {
+                let elem = self.dim_element.clone().with_location(dim_geo.loc);
+                push(elem.into());
+            } else {
+                let elem = SolidColorRenderElement::from_buffer(
+                    &self.dim_buffer,
+                    dim_geo.loc,
+                    1.,
+                    Kind::Unspecified,
+                );
+                push(elem.into());
+            }
+        }
 
         // If we're resizing, try to render a shader, or a fallback.
         let mut pushed_resize = false;
