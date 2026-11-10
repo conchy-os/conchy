@@ -75,6 +75,7 @@ use crate::utils::{
 };
 use crate::window::ResolvedWindowRules;
 
+pub mod axis;
 pub mod closing_window;
 pub mod floating;
 pub mod focus_ring;
@@ -4210,13 +4211,14 @@ impl<W: LayoutElement> Layout<W> {
                 }
                 .band(sq_dist / INTERACTIVE_MOVE_START_THRESHOLD);
 
-                let (is_floating, tile, workspace_config) = self
+                let (is_floating, axis, tile, workspace_config) = self
                     .workspaces_mut()
                     .find(|ws| ws.has_window(&window_id))
                     .map(|ws| {
                         let workspace_config = ws.layout_config().cloned().map(|c| (ws.id(), c));
                         (
                             ws.is_floating(&window_id),
+                            ws.axis(),
                             ws.tiles_mut()
                                 .find(|tile| *tile.window().id() == window_id)
                                 .unwrap(),
@@ -4224,7 +4226,11 @@ impl<W: LayoutElement> Layout<W> {
                         )
                     })
                     .unwrap();
-                tile.interactive_move_offset = pointer_delta.upscale(factor);
+                tile.interactive_move_offset = if is_floating {
+                    pointer_delta.upscale(factor)
+                } else {
+                    axis.point_in(pointer_delta.upscale(factor))
+                };
 
                 // Put it back to be able to easily return.
                 self.interactive_move = Some(InteractiveMoveState::Starting {
@@ -4621,17 +4627,24 @@ impl<W: LayoutElement> Layout<W> {
                 }
 
                 // needed because empty_workspace_above_first could have modified the idx
-                let (tile, tile_offset, ws_geo) = mon
+                let (tile, tile_offset, ws_geo, axis) = mon
                     .workspaces_with_render_geo_mut(false)
                     .find_map(|(ws, geo)| {
+                        let axis = if ws.is_floating(&win_id) {
+                            axis::AxisMap::default()
+                        } else {
+                            ws.axis()
+                        };
                         ws.tiles_with_render_positions_mut(false)
                             .find(|(tile, _)| tile.window().id() == &win_id)
-                            .map(|(tile, tile_offset)| (tile, tile_offset, geo))
+                            .map(|(tile, tile_offset)| (tile, tile_offset, geo, axis))
                     })
                     .unwrap();
                 let new_tile_render_loc = ws_geo.loc + tile_offset.upscale(zoom);
 
-                tile.animate_move_from((tile_render_loc - new_tile_render_loc).downscale(zoom));
+                tile.animate_move_from(
+                    axis.point_in((tile_render_loc - new_tile_render_loc).downscale(zoom)),
+                );
 
                 // Interactive move into floating barely animates (it doesn't really move after
                 // being dropped), so setting it as moving between workspaces would just cause it to

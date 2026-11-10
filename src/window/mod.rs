@@ -105,6 +105,12 @@ pub struct ResolvedWindowRules {
     /// Extra opacity to draw this window with.
     pub opacity: Option<f32>,
 
+    /// Dimming factor for this window when inactive (0.0 to 1.0).
+    pub inactive_dim: Option<f32>,
+
+    /// Whether fullscreen HDR content bypasses compositor tone mapping to allow direct scanout.
+    pub hdr_direct_scanout_passthrough: Option<bool>,
+
     /// Corner radius to assume this window has.
     pub geometry_corner_radius: Option<CornerRadius>,
 
@@ -300,6 +306,12 @@ impl ResolvedWindowRules {
                 }
                 if let Some(x) = rule.opacity {
                     resolved.opacity = Some(x);
+                }
+                if let Some(x) = rule.inactive_dim {
+                    resolved.inactive_dim = Some(x);
+                }
+                if let Some(x) = rule.hdr_direct_scanout_passthrough {
+                    resolved.hdr_direct_scanout_passthrough = Some(x);
                 }
                 if let Some(x) = rule.geometry_corner_radius {
                     resolved.geometry_corner_radius = Some(x);

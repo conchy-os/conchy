@@ -323,13 +323,14 @@ pub fn scanout_color_transform(
     blend_hdr: bool,
     reference_luminance: f64,
     peak_luminance: f64,
+    allow_fullscreen_passthrough: bool,
 ) -> Option<ScanoutColorTransform> {
     if let ContentColor::HdrPq {
         max_lum, ref_lum, ..
     } = content
     {
         let scaled = scaled_max_lum(max_lum, reference_luminance / f64::from(ref_lum));
-        if tonemap_needed(scaled, peak_luminance) {
+        if !allow_fullscreen_passthrough && tonemap_needed(scaled, peak_luminance) {
             return None;
         }
     }
@@ -1522,6 +1523,7 @@ mod tests {
             true,
             203.,
             1000.,
+            false,
         )
         .unwrap();
         let linear = post_blend_linear_transform(sdr, encode).unwrap();
@@ -1718,7 +1720,7 @@ mod tests {
         // SDR on an HDR output: gamma 2.2 decode, reference white at 203 cd/m² = a gain of
         // 203/80 on the PQ-125 linear scale, 709 -> 2020, PQ encode.
         let sdr =
-            scanout_color_transform(ContentColor::Sdr { gamut: srgb }, true, 203., peak).unwrap();
+            scanout_color_transform(ContentColor::Sdr { gamut: srgb }, true, 203., peak, false).unwrap();
         assert_eq!(sdr.decode, Some(Curve1DType::Gamma22));
         assert!((sdr.multiplier - 2.5375).abs() < 1e-9);
         assert_eq!(sdr.ctm, Some(mat3_to_ctm(BT709_TO_BT2020)));
@@ -1730,7 +1732,7 @@ mod tests {
             max_lum: Some(10_000),
             ref_lum: 203,
         };
-        assert!(scanout_color_transform(pq_2020, true, 203., peak)
+        assert!(scanout_color_transform(pq_2020, true, 203., peak, false)
             .unwrap()
             .is_identity());
 
@@ -1740,14 +1742,14 @@ mod tests {
             max_lum: Some(10_000),
             ref_lum: 203,
         };
-        let dimmed = scanout_color_transform(pq_203, true, 100., peak).unwrap();
+        let dimmed = scanout_color_transform(pq_203, true, 100., peak, false).unwrap();
         assert_eq!(dimmed.decode, Some(Curve1DType::Pq125Eotf));
         assert!((dimmed.multiplier - 100. / 203.).abs() < 1e-9);
         assert_eq!(dimmed.ctm, None);
         assert_eq!(dimmed.encode, Some(Curve1DType::Pq125InvEotf));
         // ... and anything on an SDR output that is already SDR needs no transform.
         assert!(
-            scanout_color_transform(ContentColor::Sdr { gamut: srgb }, false, 203., 203.)
+            scanout_color_transform(ContentColor::Sdr { gamut: srgb }, false, 203., 203., false)
                 .unwrap()
                 .is_identity()
         );
@@ -1763,6 +1765,7 @@ mod tests {
             true,
             203.,
             peak,
+            false,
         )
         .unwrap();
         assert_eq!(pq_p3.decode, Some(Curve1DType::Pq125Eotf));
@@ -1787,6 +1790,7 @@ mod tests {
             true,
             203.,
             peak,
+            false,
         )
         .unwrap();
         assert_eq!(scrgb.decode, None);
@@ -1804,6 +1808,7 @@ mod tests {
             true,
             203.,
             peak,
+            false,
         )
         .unwrap();
         assert_eq!(linear_2020.ctm, None);
@@ -1820,6 +1825,7 @@ mod tests {
             false,
             203.,
             203.,
+            false,
         )
         .unwrap();
         assert_eq!(pq_on_sdr.decode, Some(Curve1DType::Pq125Eotf));
@@ -1837,6 +1843,7 @@ mod tests {
             false,
             203.,
             203.,
+            false,
         )
         .unwrap();
         assert_eq!(scrgb_on_sdr.decode, None);
@@ -1877,7 +1884,7 @@ mod tests {
         assert!((dimmed.hdr_ref_scale - 100. / 203.).abs() < 0.0001);
         assert_eq!(dimmed.pq_gamut, 0.0);
         assert_eq!(dimmed.tonemap, 0.0);
-        let scanout = scanout_color_transform(pq(203), true, 100., 1_000.).unwrap();
+        let scanout = scanout_color_transform(pq(203), true, 100., 1_000., false).unwrap();
         assert!((scanout.multiplier - f64::from(dimmed.hdr_ref_scale)).abs() < 0.0001);
 
         // SDR capture frames get the same rescale, so a screencast matches the screen.
@@ -1898,19 +1905,19 @@ mod tests {
         // white, both composited and (by denial) on the scanout path.
         let plain = FrameBlendState::values_for_content(true, 203. / 10000., 800., pq(1_000));
         assert_eq!(plain.tonemap, 1.0);
-        assert_eq!(scanout_color_transform(pq(1_000), true, 203., 800.), None);
+        assert_eq!(scanout_color_transform(pq(1_000), true, 203., 800., false), None);
 
         // Dimming the output reference luminance to 100 scales that peak to ~493 cd/m²,
         // which fits in the output: no tone mapping, and scanout is allowed again.
         let dimmed = FrameBlendState::values_for_content(true, 100. / 10000., 800., pq(1_000));
         assert_eq!(dimmed.tonemap, 0.0);
-        assert!(scanout_color_transform(pq(1_000), true, 100., 800.).is_some());
+        assert!(scanout_color_transform(pq(1_000), true, 100., 800., false).is_some());
 
         // Raising it tone maps content that fits at the default reference: 500 cd/m² scaled
         // by 406/203 peaks at 1000, above the output.
         let raised = FrameBlendState::values_for_content(true, 406. / 10000., 800., pq(500));
         assert_eq!(raised.tonemap, 1.0);
-        assert_eq!(scanout_color_transform(pq(500), true, 406., 800.), None);
+        assert_eq!(scanout_color_transform(pq(500), true, 406., 800., false), None);
         // ... and the curve is derived from that scaled peak, not the declared 500.
         let expected = tonemap_curve_v(1_000. / 406., 800. / 406.);
         assert!((f64::from(raised.tm_v) - expected).abs() < 1e-4);
@@ -1928,36 +1935,36 @@ mod tests {
         // PQ content brighter than the sink's EDID peak is tone mapped during composition;
         // no parametric plane pipeline can express the curve, so scanout must be denied.
         assert_eq!(
-            scanout_color_transform(pq(Some(10_000)), true, 203., 800.),
+            scanout_color_transform(pq(Some(10_000)), true, 203., 800., false),
             None
         );
         assert_eq!(
-            scanout_color_transform(pq(Some(1_000)), true, 203., 800.),
+            scanout_color_transform(pq(Some(1_000)), true, 203., 800., false),
             None
         );
         // Content within the peak scans out.
-        assert!(scanout_color_transform(pq(Some(750)), true, 203., 800.)
+        assert!(scanout_color_transform(pq(Some(750)), true, 203., 800., false)
             .unwrap()
             .is_identity());
         // A tiny overshoot is clipping territory, not tone mapping (the eta slack).
-        assert!(scanout_color_transform(pq(Some(800)), true, 203., 800.)
+        assert!(scanout_color_transform(pq(Some(800)), true, 203., 800., false)
             .unwrap()
             .is_identity());
         // Display-referred (Windows-BT.2100) content is exempt.
-        assert!(scanout_color_transform(pq(None), true, 203., 800.)
+        assert!(scanout_color_transform(pq(None), true, 203., 800., false)
             .unwrap()
             .is_identity());
 
         // On SDR outputs the peak is the reference white, so regular PQ content is always
         // tone mapped (and composited).
         assert_eq!(
-            scanout_color_transform(pq(Some(10_000)), false, 203., 203.),
+            scanout_color_transform(pq(Some(10_000)), false, 203., 203., false),
             None
         );
 
         // SDR and extended-linear content is never tone mapped.
         assert!(
-            scanout_color_transform(ContentColor::Sdr { gamut: bt2020 }, true, 203., 800.)
+            scanout_color_transform(ContentColor::Sdr { gamut: bt2020 }, true, 203., 800., false)
                 .is_some()
         );
         assert!(scanout_color_transform(
@@ -1969,8 +1976,32 @@ mod tests {
             true,
             203.,
             800.,
+            false,
         )
         .is_some());
+    }
+
+    #[test]
+    fn fullscreen_passthrough_allows_direct_scanout_even_when_content_peaks_above_output() {
+        let bt2020 = ContentGamut::Bt2020;
+        let pq = |max_lum| ContentColor::HdrPq {
+            gamut: bt2020,
+            max_lum: Some(max_lum),
+            ref_lum: 203,
+        };
+
+        // 1000-nit and 10000-nit content on an 800-nit output:
+        // When not fullscreen passthrough, tone mapping check denies scanout.
+        assert_eq!(scanout_color_transform(pq(1_000), true, 203., 800., false), None);
+        assert_eq!(scanout_color_transform(pq(10_000), true, 203., 800., false), None);
+
+        // When fullscreen passthrough is allowed (e.g. MPV in fullscreen), tone mapping check is
+        // bypassed, and since the content matches output reference luminance in BT.2020 container,
+        // it returns IDENTITY!
+        let scanout_1000 = scanout_color_transform(pq(1_000), true, 203., 800., true).unwrap();
+        assert!(scanout_1000.is_identity());
+        let scanout_10000 = scanout_color_transform(pq(10_000), true, 203., 800., true).unwrap();
+        assert!(scanout_10000.is_identity());
     }
 
     #[test]

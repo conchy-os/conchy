@@ -241,6 +241,10 @@ pub struct Hdr {
     /// the display, and the luminances advertised to clients.
     #[knuffel(child, unwrap(argument))]
     pub peak_luminance: Option<FloatOrInt<1, 10000>>,
+    /// Whether fullscreen HDR content bypasses compositor tone mapping to allow direct scanout.
+    /// Defaults to true.
+    #[knuffel(child, unwrap(argument))]
+    pub direct_scanout_passthrough: Option<bool>,
 }
 
 /// When HDR engages on an `hdr`-enabled output.

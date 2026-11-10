@@ -2579,7 +2579,19 @@ impl Niri {
         peak_luminance: f64,
     ) -> HashMap<Id, Option<ScanoutColorTransform>> {
         let mut transforms = HashMap::new();
+        let output_passthrough = self
+            .output_hdr_config(output)
+            .map(|(hdr, _)| hdr.direct_scanout_passthrough.unwrap_or(true))
+            .unwrap_or(true);
+
         for mapped in self.layout.windows_for_output(output) {
+            let is_fullscreen = mapped.sizing_mode().is_fullscreen();
+            let allow_passthrough = is_fullscreen
+                && mapped
+                    .rules()
+                    .hdr_direct_scanout_passthrough
+                    .unwrap_or(output_passthrough);
+
             with_surface_tree_downward(
                 mapped.toplevel().wl_surface(),
                 (),
@@ -2601,6 +2613,7 @@ impl Niri {
                             blend_hdr,
                             reference_luminance,
                             peak_luminance,
+                            allow_passthrough,
                         ),
                     );
                 },
