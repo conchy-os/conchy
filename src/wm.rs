@@ -53,7 +53,6 @@ use smithay::input::pointer::{
     CursorIcon, CursorImageStatus, CursorImageSurfaceData, Focus,
     GrabStartData as PointerGrabStartData, MotionEvent,
 };
-use smithay::input::tablet::TabletSeatTrait;
 use smithay::input::{Seat, SeatState};
 use smithay::output::{self, Output, OutputModeSource, PhysicalProperties, Subpixel, WeakOutput};
 use smithay::reexports::calloop::generic::Generic;
@@ -188,18 +187,16 @@ use crate::render_helpers::surface::push_elements_from_surface_tree;
 use crate::render_helpers::texture::{TextureBuffer, UniversalTextureRenderElement};
 use crate::render_helpers::xray::{Xray, XrayPos};
 use crate::render_helpers::{
-    encompassing_geo, render_to_dmabuf, render_to_encompassing_texture, render_to_shm,
+    encompassing_geo, render_to_dmabuf, render_to_shm,
     render_to_texture, render_to_vec, shaders, RenderCtx, RenderTarget,
 };
 #[cfg(feature = "xdp-gnome-screencast")]
 use crate::screencasting::Screencasting;
 use crate::ui::config_error_notification::ConfigErrorNotification;
 use crate::ui::exit_confirm_dialog::{ExitConfirmDialog, ExitConfirmDialogRenderElement};
-use crate::ui::hotkey_overlay::HotkeyOverlay;
 use crate::ui::minimized_strip::{self, MinimizedStripRenderElement};
 use crate::ui::mru::{MruCloseRequest, WindowMruUi, WindowMruUiRenderElement};
 use crate::ui::screen_transition::{self, ScreenTransition};
-use crate::ui::screenshot_ui::{OutputScreenshot, ScreenshotUi, ScreenshotUiRenderElement};
 use crate::utils::scale::{closest_representable_scale, guess_monitor_scale};
 use crate::utils::spawning::{CHILD_DISPLAY, CHILD_ENV};
 use crate::utils::transaction::SurfaceBarriers;
@@ -438,9 +435,7 @@ pub struct Niri {
     // State that we last sent to the logind LockedHint.
     pub locked_hint: Option<bool>,
 
-    pub screenshot_ui: ScreenshotUi,
     pub config_error_notification: ConfigErrorNotification,
-    pub hotkey_overlay: HotkeyOverlay,
     pub exit_confirm_dialog: ExitConfirmDialog,
 
     pub window_mru_ui: WindowMruUi,
@@ -585,7 +580,6 @@ pub enum KeyboardFocus {
     Layout { surface: Option<WlSurface> },
     LayerShell { surface: WlSurface },
     LockScreen { surface: Option<WlSurface> },
-    ScreenshotUi,
     ExitConfirmDialog,
     Overview,
     Mru,
@@ -740,7 +734,6 @@ impl KeyboardFocus {
             KeyboardFocus::Layout { surface } => surface.as_ref(),
             KeyboardFocus::LayerShell { surface } => Some(surface),
             KeyboardFocus::LockScreen { surface } => surface.as_ref(),
-            KeyboardFocus::ScreenshotUi => None,
             KeyboardFocus::ExitConfirmDialog => None,
             KeyboardFocus::Overview => None,
             KeyboardFocus::Mru => None,
@@ -752,7 +745,6 @@ impl KeyboardFocus {
             KeyboardFocus::Layout { surface } => surface,
             KeyboardFocus::LayerShell { surface } => Some(surface),
             KeyboardFocus::LockScreen { surface } => surface,
-            KeyboardFocus::ScreenshotUi => None,
             KeyboardFocus::ExitConfirmDialog => None,
             KeyboardFocus::Overview => None,
             KeyboardFocus::Mru => None,
@@ -1403,10 +1395,7 @@ impl State {
         let pointer = &self.niri.seat.get_pointer().unwrap();
         let location = pointer.current_location();
 
-        if !self.niri.exit_confirm_dialog.is_open()
-            && !self.niri.is_locked()
-            && !self.niri.screenshot_ui.is_open()
-        {
+        if !self.niri.exit_confirm_dialog.is_open() && !self.niri.is_locked() {
             // Don't refresh cursor focus during transitions.
             if let Some((output, _)) = self.niri.output_under(location) {
                 let monitor = self.niri.layout.monitor_for_output(output).unwrap();
@@ -1518,8 +1507,6 @@ impl State {
             KeyboardFocus::LockScreen {
                 surface: self.niri.lock_surface_focus(),
             }
-        } else if self.niri.screenshot_ui.is_open() {
-            KeyboardFocus::ScreenshotUi
         } else if self.niri.window_mru_ui.is_open() {
             KeyboardFocus::Mru
         } else if let Some(output) = self.niri.layout.active_output() {
@@ -1906,9 +1893,6 @@ impl State {
         let binds_changed = config.binds != old_config.binds;
         let new_mod_key = self.backend.mod_key(&config);
         if new_mod_key != self.backend.mod_key(&old_config) || binds_changed {
-            self.niri
-                .hotkey_overlay
-                .on_hotkey_config_updated(new_mod_key);
             self.niri.mods_with_mouse_binds = mods_with_mouse_binds(new_mod_key, &config.binds);
             self.niri.mods_with_wheel_binds = mods_with_wheel_binds(new_mod_key, &config.binds);
             self.niri.mods_with_tablet_stylus_binds =
@@ -2337,54 +2321,6 @@ impl State {
         self.niri.output_management_state.notify_changes(new_config);
     }
 
-    pub fn open_screenshot_ui(&mut self, show_pointer: bool, path: Option<String>) {
-        if self.niri.is_locked() || self.niri.screenshot_ui.is_open() {
-            return;
-        }
-
-        let default_output = self
-            .niri
-            .output_under_cursor()
-            .or_else(|| self.niri.layout.active_output().cloned());
-        let Some(default_output) = default_output else {
-            return;
-        };
-
-        self.niri.update_render_elements(None);
-
-        let Some(screenshots) = crate::with_primary_renderer_any!(self.backend, |renderer| {
-            self.niri.capture_screenshots(renderer).collect()
-        }) else {
-            return;
-        };
-
-        // Now that we captured the screenshots, clear grabs like drag-and-drop, etc.
-        let time = InputTime::now();
-        self.niri
-            .seat
-            .get_pointer()
-            .unwrap()
-            .unset_grab(self, SERIAL_COUNTER.next_serial(), time);
-        if let Some(touch) = self.niri.seat.get_touch() {
-            touch.unset_grab(self);
-        }
-
-        for tool in self.niri.seat.tablet_seat().get_tools().into_values() {
-            tool.unset_grab(self, SERIAL_COUNTER.next_serial(), time);
-        }
-
-        crate::with_primary_renderer_any!(self.backend, |renderer| {
-            self.niri
-                .screenshot_ui
-                .open(renderer, screenshots, default_output, show_pointer, path)
-        });
-
-        self.niri
-            .cursor_manager
-            .set_cursor_image(CursorImageStatus::Named(CursorIcon::Crosshair));
-        self.niri.queue_redraw_all();
-    }
-
     pub fn handle_pick_color(&mut self, tx: async_channel::Sender<Option<conchy_ipc::PickedColor>>) {
         let pointer = self.niri.seat.get_pointer().unwrap();
         let start_data = PointerGrabStartData {
@@ -2398,32 +2334,6 @@ impl State {
         self.niri
             .cursor_manager
             .set_cursor_image(CursorImageStatus::Named(CursorIcon::Crosshair));
-        self.niri.queue_redraw_all();
-    }
-
-    pub fn confirm_screenshot(&mut self, write_to_disk: bool) {
-        let ScreenshotUi::Open { path, .. } = &mut self.niri.screenshot_ui else {
-            return;
-        };
-        let path = path.take();
-
-        crate::with_primary_renderer_any!(self.backend, |renderer| {
-            match self.niri.screenshot_ui.capture(renderer) {
-                Ok((size, pixels)) => {
-                    if let Err(err) = self.niri.save_screenshot(size, pixels, write_to_disk, path) {
-                        warn!("error saving screenshot: {err:?}");
-                    }
-                }
-                Err(err) => {
-                    warn!("error capturing screenshot: {err:?}");
-                }
-            }
-        });
-
-        self.niri.screenshot_ui.close();
-        self.niri
-            .cursor_manager
-            .set_cursor_image(CursorImageStatus::default_named());
         self.niri.queue_redraw_all();
     }
 
@@ -3122,15 +3032,9 @@ impl Niri {
         let mods_with_finger_scroll_binds = mods_with_finger_scroll_binds(mod_key, &config_.binds);
         let mods_with_tablet_stylus_binds = mods_with_tablet_stylus_binds(mod_key, &config_.binds);
 
-        let screenshot_ui = ScreenshotUi::new(animation_clock.clone(), config.clone());
         let window_mru_ui = WindowMruUi::new(config.clone());
         let config_error_notification =
             ConfigErrorNotification::new(animation_clock.clone(), config.clone());
-
-        let mut hotkey_overlay = HotkeyOverlay::new(config.clone(), mod_key);
-        if !config_.hotkey_overlay.skip_at_startup {
-            hotkey_overlay.show();
-        }
 
         let exit_confirm_dialog = ExitConfirmDialog::new(animation_clock.clone(), config.clone());
 
@@ -3326,9 +3230,7 @@ impl Niri {
             lock_state: LockState::Unlocked,
             locked_hint: None,
 
-            screenshot_ui,
             config_error_notification,
-            hotkey_overlay,
             exit_confirm_dialog,
 
             window_mru_ui,
@@ -3702,12 +3604,6 @@ impl Niri {
             }
         }
 
-        if self.screenshot_ui.close() {
-            self.cursor_manager
-                .set_cursor_image(CursorImageStatus::default_named());
-            self.queue_redraw_all();
-        }
-
         if self.window_mru_ui.output() == Some(output) {
             self.cancel_mru();
         }
@@ -3742,23 +3638,6 @@ impl Niri {
             state.lock_color_buffer.resize(output_size);
             if let Some(lock_surface) = &state.lock_surface {
                 configure_lock_surface(lock_surface, output);
-            }
-        }
-
-        // If the output size changed with an open screenshot UI, close the screenshot UI.
-        if let Some((old_size, old_scale, old_transform)) = self.screenshot_ui.output_size(output) {
-            let output_mode = output.current_mode().unwrap();
-            let size = transform.transform_size(output_mode.size);
-            let scale = output.current_scale().fractional_scale();
-            // FIXME: scale changes and transform flips shouldn't matter but they currently do since
-            // I haven't quite figured out how to draw the screenshot textures in
-            // physical coordinates.
-            if old_size != size || old_scale != scale || old_transform != transform {
-                self.screenshot_ui.close();
-                self.cursor_manager
-                    .set_cursor_image(CursorImageStatus::default_named());
-                self.queue_redraw_all();
-                return;
             }
         }
 
@@ -3947,7 +3826,7 @@ impl Niri {
         extended_bounds: bool,
         pos: Point<f64, Logical>,
     ) -> Option<(Output, &Workspace<Mapped>)> {
-        if self.exit_confirm_dialog.is_open() || self.is_locked() || self.screenshot_ui.is_open() {
+        if self.exit_confirm_dialog.is_open() || self.is_locked() {
             return None;
         }
 
@@ -3982,7 +3861,6 @@ impl Niri {
     pub fn window_under(&self, pos: Point<f64, Logical>) -> Option<&Mapped> {
         if self.exit_confirm_dialog.is_open()
             || self.is_locked()
-            || self.screenshot_ui.is_open()
             || self.window_mru_ui.is_open()
         {
             return None;
@@ -4063,7 +3941,7 @@ impl Niri {
             return rv;
         }
 
-        if self.screenshot_ui.is_open() || self.window_mru_ui.is_open() {
+        if self.window_mru_ui.is_open() {
             return rv;
         }
 
@@ -4756,7 +4634,6 @@ impl Niri {
             // FIXME: when going into the screenshot UI from a layer-shell focus, and then back to
             // layer-shell, the layout will briefly draw as active, despite never having focus.
             KeyboardFocus::LockScreen { .. } => true,
-            KeyboardFocus::ScreenshotUi => true,
             KeyboardFocus::ExitConfirmDialog => true,
             KeyboardFocus::Overview => true,
             KeyboardFocus::Mru => true,
@@ -4864,7 +4741,6 @@ impl Niri {
         self.layout.advance_animations();
         self.config_error_notification.advance_animations();
         self.exit_confirm_dialog.advance_animations();
-        self.screenshot_ui.advance_animations();
         self.window_mru_ui.advance_animations();
 
         for state in self.output_state.values_mut() {
@@ -5101,23 +4977,7 @@ impl Niri {
         )
         .into();
 
-        // If the screenshot UI is open, draw it.
-        if self.screenshot_ui.is_open() {
-            self.screenshot_ui
-                .render_output(output, ctx.target, &mut |elem| push(elem.into()));
-
-            // Add the backdrop for outputs that were connected while the screenshot UI was open.
-            push(backdrop);
-
-            return;
-        }
-
-        // Draw the hotkey overlay on top.
-        if let Some(element) = self.hotkey_overlay.render(ctx.renderer, output) {
-            push(element.into());
-        }
-
-        // Then, the Alt-Tab switcher.
+        // The Alt-Tab switcher.
         self.window_mru_ui
             .render_output(self, output, ctx.r(), &mut |elem| push(elem.into()));
 
@@ -5442,7 +5302,6 @@ impl Niri {
             state.unfinished_animations_remain |=
                 self.config_error_notification.are_animations_ongoing();
             state.unfinished_animations_remain |= self.exit_confirm_dialog.are_animations_ongoing();
-            state.unfinished_animations_remain |= self.screenshot_ui.are_animations_ongoing();
             state.unfinished_animations_remain |= self.window_mru_ui.are_animations_ongoing();
             state.unfinished_animations_remain |= state.screen_transition.is_some();
 
@@ -6851,97 +6710,6 @@ impl Niri {
         self.queue_redraw_all();
     }
 
-    pub fn capture_screenshots<'a, R: NiriCaptureRenderer>(
-        &'a self,
-        renderer: &'a mut R,
-    ) -> impl Iterator<Item = (Output, [OutputScreenshot; 3])> + 'a
-    where
-        PointerRenderElements<R>: RenderElement<R>,
-        TileRenderElement<R>: RenderElement<R>,
-        WindowMruUiRenderElement<R>: RenderElement<R>,
-        MinimizedStripRenderElement<R>: RenderElement<R>,
-        LayoutElementRenderElement<R>: RenderElement<R>,
-        UniversalTextureRenderElement: RenderElement<R>,
-        R::Error: Send + Sync + 'static,
-        OutputRenderElements<R>: RenderElement<R>,
-    {
-        self.global_space.outputs().cloned().filter_map(|output| {
-            let size = output.current_mode().unwrap().size;
-            let transform = output.current_transform();
-            let size = transform.transform_size(size);
-
-            let scale = Scale::from(output.current_scale().fractional_scale());
-            let targets = [
-                RenderTarget::Output,
-                RenderTarget::Screencast,
-                RenderTarget::ScreenCapture,
-            ];
-            let screenshot = targets.map(|target| {
-                let ctx = RenderCtx {
-                    renderer,
-                    target,
-                    xray: None,
-                };
-                let elements = self.render_to_vec(ctx, &output, false);
-                let elements = elements.iter().rev();
-
-                let res = render_to_texture(
-                    renderer,
-                    size,
-                    scale,
-                    Transform::Normal,
-                    Fourcc::Abgr8888,
-                    elements,
-                );
-                if let Err(err) = &res {
-                    warn!("error rendering output {}: {err:?}", output.name());
-                }
-                let res_output = res.ok();
-
-                let mut pointer = Vec::new();
-
-                // We check the pointer visibility for Disabled (and not .is_visible()) in order to
-                // show the pointer even when it's hidden through cursor {} options. The user can
-                // then toggle it in the screenshot UI as needed.
-                if self.pointer_visibility != PointerVisibility::Disabled {
-                    self.render_pointer(renderer, &output, &mut |elem| pointer.push(elem));
-                }
-
-                let res_pointer = if pointer.is_empty() {
-                    None
-                } else {
-                    let res = render_to_encompassing_texture(
-                        renderer,
-                        scale,
-                        Transform::Normal,
-                        Fourcc::Abgr8888,
-                        &pointer,
-                    );
-                    if let Err(err) = &res {
-                        warn!("error rendering pointer for {}: {err:?}", output.name());
-                    }
-                    res.ok()
-                };
-
-                res_output.map(|(texture, _)| {
-                    OutputScreenshot::from_textures(
-                        renderer,
-                        scale,
-                        texture,
-                        res_pointer.map(|(texture, _, geo)| (texture, geo)),
-                    )
-                })
-            });
-
-            if screenshot.iter().any(|res| res.is_none()) {
-                return None;
-            }
-
-            let screenshot = screenshot.map(|res| res.unwrap());
-            Some((output, screenshot))
-        })
-    }
-
     pub fn screenshot<R: NiriCaptureRenderer>(
         &mut self,
         renderer: &mut R,
@@ -7321,7 +7089,6 @@ impl Niri {
 
         if self.output_state.is_empty() {
             // There are no outputs, lock the session right away.
-            self.screenshot_ui.close();
             self.cursor_manager
                 .set_cursor_image(CursorImageStatus::default_named());
 
@@ -7381,7 +7148,6 @@ impl Niri {
             } => {
                 self.event_loop.remove(deadline_token);
 
-                self.screenshot_ui.close();
                 self.cursor_manager
                     .set_cursor_image(CursorImageStatus::default_named());
                 self.cancel_mru();
@@ -7663,17 +7429,7 @@ impl Niri {
 
         if let Some(window) = &new_focus.window {
             if !self.layout.is_overview_open() && current_focus.window.as_ref() != Some(window) {
-                let (window, hit) = window;
-
-                // Don't trigger focus-follows-mouse over the tab indicator.
-                if matches!(
-                    hit,
-                    HitType::Activate {
-                        is_tab_indicator: true
-                    }
-                ) {
-                    return;
-                }
+                let (window, _hit) = window;
 
                 if !self.layout.should_trigger_focus_follows_mouse_on(window) {
                     return;
@@ -8030,7 +7786,6 @@ niri_render_elements! {
         Pointer = PointerRenderElements<R>,
         Wayland = BlendSurfaceRenderElement<R>,
         SolidColor = SolidColorRenderElement,
-        ScreenshotUi = ScreenshotUiRenderElement,
         WindowMruUi = WindowMruUiRenderElement<R>,
         MinimizedStrip = MinimizedStripRenderElement<R>,
         ExitConfirmDialog = ExitConfirmDialogRenderElement,

@@ -83,7 +83,6 @@ pub mod monitor;
 pub mod opening_window;
 pub mod scrolling;
 pub mod shadow;
-pub mod tab_indicator;
 pub mod tile;
 pub mod workspace;
 
@@ -575,10 +574,7 @@ pub enum HitType {
     /// The hit can activate a window, but it is not in the input region so cannot send events.
     ///
     /// For example, this could be clicking on a tile border outside the window.
-    Activate {
-        /// Whether the hit was on the tab indicator.
-        is_tab_indicator: bool,
-    },
+    Activate,
 }
 
 #[derive(Debug)]
@@ -685,10 +681,8 @@ impl HitType {
 
     pub fn to_activate(self) -> Self {
         match self {
-            HitType::Input { .. } => HitType::Activate {
-                is_tab_indicator: false,
-            },
-            HitType::Activate { .. } => self,
+            HitType::Input { .. } => HitType::Activate,
+            HitType::Activate => self,
         }
     }
 }

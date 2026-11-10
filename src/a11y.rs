@@ -16,10 +16,9 @@ use crate::window::mapped::MappedId;
 
 const ID_ROOT: NodeId = NodeId(0);
 const ID_ANNOUNCEMENT: NodeId = NodeId(1);
-const ID_SCREENSHOT_UI: NodeId = NodeId(2);
-const ID_EXIT_CONFIRM_DIALOG: NodeId = NodeId(3);
-const ID_OVERVIEW: NodeId = NodeId(4);
-const ID_MRU: NodeId = NodeId(5);
+const ID_EXIT_CONFIRM_DIALOG: NodeId = NodeId(2);
+const ID_OVERVIEW: NodeId = NodeId(3);
+const ID_MRU: NodeId = NodeId(4);
 
 pub struct A11y {
     event_loop: LoopHandle<'static, State>,
@@ -262,17 +261,8 @@ impl Niri {
         self.a11y_announce(crate::ui::config_error_notification::error_text(false));
     }
 
-    pub fn a11y_announce_hotkey_overlay(&mut self) {
-        if self.a11y.to_accesskit.is_none() {
-            return;
-        }
-
-        self.a11y_announce(self.hotkey_overlay.a11y_text());
-    }
-
     fn a11y_focus(&self) -> NodeId {
         match self.keyboard_focus {
-            KeyboardFocus::ScreenshotUi => ID_SCREENSHOT_UI,
             KeyboardFocus::ExitConfirmDialog => ID_EXIT_CONFIRM_DIALOG,
             KeyboardFocus::Overview => ID_OVERVIEW,
             KeyboardFocus::Mru => ID_MRU,
@@ -300,9 +290,6 @@ impl Niri {
         let mut node = Node::new(Role::Label);
         node.set_live(Live::Polite);
 
-        let mut screenshot_ui = Node::new(Role::Group);
-        screenshot_ui.set_label("Screenshot UI");
-
         let exit_confirm_dialog = crate::ui::exit_confirm_dialog::a11y_node();
 
         let mut overview = Node::new(Role::Group);
@@ -314,7 +301,6 @@ impl Niri {
         let mut root = Node::new(Role::Window);
         root.set_children(vec![
             ID_ANNOUNCEMENT,
-            ID_SCREENSHOT_UI,
             ID_EXIT_CONFIRM_DIALOG,
             ID_OVERVIEW,
             ID_MRU,
@@ -335,7 +321,6 @@ impl Niri {
             nodes: vec![
                 (ID_ROOT, root),
                 (ID_ANNOUNCEMENT, node),
-                (ID_SCREENSHOT_UI, screenshot_ui),
                 (ID_EXIT_CONFIRM_DIALOG, exit_confirm_dialog),
                 (ID_OVERVIEW, overview),
                 (ID_MRU, mru),

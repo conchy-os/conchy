@@ -12,7 +12,6 @@ use smithay::utils::{Logical, Point, Rectangle, Scale, Serial, Size};
 
 use super::closing_window::{ClosingWindow, ClosingWindowRenderElement};
 use super::monitor::InsertPosition;
-use super::tab_indicator::{TabIndicator, TabIndicatorRenderElement, TabInfo};
 use super::tile::{Tile, TileRenderElement, TileRenderSnapshot};
 use super::workspace::{InteractiveResize, ResolvedSize};
 use super::{ConfigureIntent, HitType, InteractiveResizeData, LayoutElement, Options, RemovedTile};
@@ -100,7 +99,6 @@ niri_render_elements! {
     ScrollingSpaceRenderElement<R> => {
         Tile = TileRenderElement<R>,
         ClosingWindow = ClosingWindowRenderElement,
-        TabIndicator = TabIndicatorRenderElement,
     }
 }
 
@@ -209,9 +207,6 @@ pub struct Column<W: LayoutElement> {
 
     /// How this column displays and arranges windows.
     display_mode: ColumnDisplay,
-
-    /// Tab indicator for the tabbed display mode.
-    tab_indicator: TabIndicator,
 
     /// Animation of the render offset during window swapping.
     move_x_animation: Option<MoveAnimation>,
@@ -495,16 +490,7 @@ impl<W: LayoutElement> ScrollingSpace<W> {
 
     pub fn new_window_toplevel_bounds(&self, rules: &ResolvedWindowRules) -> Size<i32, Logical> {
         let border_config = self.options.layout.border.merged_with(&rules.border);
-
-        let display_mode = rules
-            .default_column_display
-            .unwrap_or(self.options.layout.default_column_display);
-        let will_tab = display_mode == ColumnDisplay::Tabbed;
-        let extra_size = if will_tab {
-            TabIndicator::new(self.options.layout.tab_indicator).extra_size(1, self.scale)
-        } else {
-            Size::from((0., 0.))
-        };
+        let extra_size = Size::from((0., 0.));
 
         compute_toplevel_bounds(
             border_config,
@@ -521,16 +507,7 @@ impl<W: LayoutElement> ScrollingSpace<W> {
         rules: &ResolvedWindowRules,
     ) -> Size<i32, Logical> {
         let border = self.options.layout.border.merged_with(&rules.border);
-
-        let display_mode = rules
-            .default_column_display
-            .unwrap_or(self.options.layout.default_column_display);
-        let will_tab = display_mode == ColumnDisplay::Tabbed;
-        let extra = if will_tab {
-            TabIndicator::new(self.options.layout.tab_indicator).extra_size(1, self.scale)
-        } else {
-            Size::from((0., 0.))
-        };
+        let extra: Size<f64, Logical> = Size::from((0., 0.));
 
         let working_size = self.working_area.size;
 
@@ -2527,15 +2504,8 @@ impl<W: LayoutElement> ScrollingSpace<W> {
                     }
                 };
 
-                // Adjust for place-within-column tab indicator.
                 let origin_x = col.tiles_origin().x;
-                let extra_w = if is_tabbed && col.sizing_mode().is_normal() {
-                    col.tab_indicator.extra_size(col.tiles.len(), col.scale).w
-                } else {
-                    0.
-                };
-
-                let size = Size::from((self.data[column_index].width - extra_w, height));
+                let size = Size::from((self.data[column_index].width, height));
                 let loc = Point::from((self.column_x(column_index) + origin_x, y));
                 Rectangle::new(loc, size)
             }
@@ -2982,13 +2952,6 @@ impl<W: LayoutElement> ScrollingSpace<W> {
                 continue;
             }
 
-            // Draw the tab indicator on top.
-            {
-                let pos = col_pos.to_physical_precise_round(scale).to_logical(scale);
-                col.tab_indicator
-                    .render(ctx.renderer, pos, &mut |elem| push(elem.into()));
-            }
-
             for (tile, tile_off, visible) in col.tiles_in_render_order() {
                 let tile_pos = col_pos + tile_off + tile.render_offset();
                 // Round to physical pixels.
@@ -3022,23 +2985,6 @@ impl<W: LayoutElement> ScrollingSpace<W> {
         // This matches self.tiles_with_render_positions().
         let scale = self.scale;
         for (col, col_pos) in self.columns_with_render_positions() {
-            // Hit the tab indicator.
-            if col.display_mode == ColumnDisplay::Tabbed && col.sizing_mode().is_normal() {
-                let col_pos = col_pos.to_physical_precise_round(scale).to_logical(scale);
-
-                if let Some(idx) = col.tab_indicator.hit(
-                    col.tab_indicator_area(),
-                    col.tiles.len(),
-                    scale,
-                    pos - col_pos,
-                ) {
-                    let hit = HitType::Activate {
-                        is_tab_indicator: true,
-                    };
-                    return Some((col.tiles[idx].window(), hit));
-                }
-            }
-
             for (tile, tile_off, visible) in col.tiles_in_render_order() {
                 if !visible {
                     continue;
@@ -4017,7 +3963,6 @@ impl<W: LayoutElement> Column<W> {
             is_pending_maximized: false,
             is_pending_fullscreen: false,
             display_mode,
-            tab_indicator: TabIndicator::new(options.layout.tab_indicator),
             move_x_animation: None,
             move_y_animation: None,
             view_size,
@@ -4037,17 +3982,6 @@ impl<W: LayoutElement> Column<W> {
             SizingMode::Normal => (),
             SizingMode::Maximized => rv.set_maximized(true),
             SizingMode::Fullscreen => rv.set_fullscreen(true),
-        }
-
-        // Animate the tab indicator for new columns.
-        if display_mode == ColumnDisplay::Tabbed
-            && !rv.options.layout.tab_indicator.hide_when_single_tab
-            && rv.sizing_mode().is_normal()
-        {
-            // Usually new columns are created together with window movement actions. For new
-            // windows, we handle that in start_open_animation().
-            rv.tab_indicator
-                .start_open_animation(rv.clock.clone(), rv.options.animations.window_movement.0);
         }
 
         rv
@@ -4095,17 +4029,11 @@ impl<W: LayoutElement> Column<W> {
             update_sizes = true;
         }
 
-        if self.options.layout.tab_indicator != options.layout.tab_indicator {
-            update_sizes = true;
-        }
-
         for (tile, data) in zip(&mut self.tiles, &mut self.data) {
             tile.update_config(view_size, scale, options.clone());
             data.update(tile);
         }
 
-        self.tab_indicator
-            .update_config(options.layout.tab_indicator);
         self.view_size = view_size;
         self.working_area = working_area;
         self.parent_area = parent_area;
@@ -4121,8 +4049,6 @@ impl<W: LayoutElement> Column<W> {
         for tile in &mut self.tiles {
             tile.update_shaders();
         }
-
-        self.tab_indicator.update_shaders();
     }
 
     pub fn advance_animations(&mut self) {
@@ -4140,21 +4066,17 @@ impl<W: LayoutElement> Column<W> {
         for tile in &mut self.tiles {
             tile.advance_animations();
         }
-
-        self.tab_indicator.advance_animations();
     }
 
     pub fn are_animations_ongoing(&self) -> bool {
         self.move_x_animation.is_some()
             || self.move_y_animation.is_some()
-            || self.tab_indicator.are_animations_ongoing()
             || self.tiles.iter().any(Tile::are_animations_ongoing)
     }
 
     pub fn are_transitions_ongoing(&self) -> bool {
         self.move_x_animation.is_some()
             || self.move_y_animation.is_some()
-            || self.tab_indicator.are_animations_ongoing()
             || self.tiles.iter().any(Tile::are_transitions_ongoing)
     }
 
@@ -4174,12 +4096,7 @@ impl<W: LayoutElement> Column<W> {
             //
             // This is not always visually correct: for example, interactive-moving a tile into an
             // otherwise stationary column will now cause that entire column to draw unculled. I'm
-            // not sure there's a good solution overall for all edge cases here. Consider that the
-            // column tab indicator needs to draw on top of the tiles, but in this counterexample
-            // above, the column is stationary, so the single moving tile would instead need to draw
-            // on top of the tab indicator.
-            //
-            // I'm going with this simple check for now that should look ok in most cases.
+            // not sure there's a good solution overall for all edge cases here.
             || self
                 .tiles
                 .iter()
@@ -4195,33 +4112,6 @@ impl<W: LayoutElement> Column<W> {
             tile_view_rect.loc -= tile_off + tile.render_offset();
             tile.update_render_elements(is_active, tile_view_rect);
         }
-
-        let config = self.tab_indicator.config();
-        let offsets = self.tile_offsets_iter(self.data.iter().copied());
-        let tabs = zip(&self.tiles, offsets)
-            .enumerate()
-            .map(|(tile_idx, (tile, tile_off))| {
-                let is_active = tile_idx == active_idx;
-                let is_urgent = tile.window().is_urgent();
-                let tile_pos = tile_off + tile.render_offset();
-                TabInfo::from_tile(tile, tile_pos, is_active, is_urgent, &config)
-            });
-
-        // Hide the tab indicator in fullscreen. If you have it configured to overlap the window,
-        // you don't want that to happen in fullscreen. Also, laying things out correctly when the
-        // tab indicator is within the column and the column goes fullscreen, would require too
-        // many changes to the code for too little benefit (it's mostly invisible anyway).
-        let enabled = self.display_mode == ColumnDisplay::Tabbed && self.sizing_mode().is_normal();
-
-        self.tab_indicator.update_render_elements(
-            enabled,
-            self.tab_indicator_area(),
-            view_rect,
-            self.tiles.len(),
-            tabs,
-            is_active,
-            self.scale,
-        );
     }
 
     pub fn is_pending_fullscreen(&self) -> bool {
@@ -4518,11 +4408,7 @@ impl<W: LayoutElement> Column<W> {
 
     /// Extra size taken up by elements in the column such as the tab indicator.
     fn extra_size(&self) -> Size<f64, Logical> {
-        if self.display_mode == ColumnDisplay::Tabbed {
-            self.tab_indicator.extra_size(self.tiles.len(), self.scale)
-        } else {
-            Size::from((0., 0.))
-        }
+        Size::from((0., 0.))
     }
 
     fn resolve_preset_width(&self, preset: PresetSize) -> ResolvedSize {
@@ -4847,20 +4733,12 @@ impl<W: LayoutElement> Column<W> {
     }
 
     fn width(&self) -> f64 {
-        let mut tiles_width = self
-            .data
+        self.data
             .iter()
             .map(|data| NotNan::new(data.size.w).unwrap())
             .max()
             .map(NotNan::into_inner)
-            .unwrap();
-
-        if self.display_mode == ColumnDisplay::Tabbed && self.sizing_mode().is_normal() {
-            let extra_size = self.tab_indicator.extra_size(self.tiles.len(), self.scale);
-            tiles_width += extra_size.w;
-        }
-
-        tiles_width
+            .unwrap()
     }
 
     fn focus_index(&mut self, index: u8) {
@@ -5291,14 +5169,6 @@ impl<W: LayoutElement> Column<W> {
             }
         }
 
-        // Animate the appearance of the tab indicator.
-        if display == ColumnDisplay::Tabbed {
-            self.tab_indicator.start_open_animation(
-                self.clock.clone(),
-                self.options.animations.window_movement.0,
-            );
-        }
-
         // Now switch the display mode for real.
         self.display_mode = display;
         self.update_tile_sizes(true);
@@ -5317,13 +5187,6 @@ impl<W: LayoutElement> Column<W> {
         }
 
         origin.y += self.working_area.loc.y + self.options.layout.gaps;
-
-        if self.display_mode == ColumnDisplay::Tabbed {
-            origin += self
-                .tab_indicator
-                .content_offset(self.tiles.len(), self.scale);
-        }
-
         origin
     }
 
@@ -5437,51 +5300,10 @@ impl<W: LayoutElement> Column<W> {
         zip(tiles, offsets)
     }
 
-    fn tab_indicator_area(&self) -> Rectangle<f64, Logical> {
-        // We'd like to use the active tile's animated size for the tab indicator, however we need
-        // to be mindful of the case where the active tile is smaller than some other tile in the
-        // column. The column assumes the size of the largest tile.
-        //
-        // We expect users to mainly resize tabbed columns by width, so matching the animated size
-        // is more important here. Besides, we always try to resize all windows in a column to the
-        // same width when possible, and also the animation for going into tabbed mode doesn't move
-        // tiles horizontally as much.
-        //
-        // For height though, it's a different story. First, users probably aren't resizing a
-        // tabbed column by height. Second, we don't match windows by height, so it's easy to have
-        // a smaller active tile than the rest of the column, e.g. by adding a fixed-size dialog.
-        // Then, switching to that dialog and back should ideally keep the tab indicator position
-        // fixed. Third, the animation for making a column tabbed moves tiles vertically, and using
-        // the active tile's animated size in this case only works for the topmost tile, and looks
-        // broken otherwise.
-        let mut max_height = 0.;
-        for tile in &self.tiles {
-            max_height = f64::max(max_height, tile.tile_size().h);
-        }
-
-        let tile = &self.tiles[self.active_tile_idx];
-        let area_size = Size::from((tile.animated_tile_size().w, max_height));
-
-        Rectangle::new(self.tiles_origin(), area_size)
-    }
-
     pub fn start_open_animation(&mut self, id: &W::Id) -> bool {
         for tile in &mut self.tiles {
             if tile.window().id() == id {
                 tile.start_open_animation();
-
-                // Animate the appearance of the tab indicator.
-                if self.display_mode == ColumnDisplay::Tabbed
-                    && self.sizing_mode().is_normal()
-                    && self.tiles.len() == 1
-                    && !self.tab_indicator.config().hide_when_single_tab
-                {
-                    self.tab_indicator.start_open_animation(
-                        self.clock.clone(),
-                        self.options.animations.window_open.anim,
-                    );
-                }
-
                 return true;
             }
         }
