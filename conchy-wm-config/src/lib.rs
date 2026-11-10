@@ -1212,6 +1212,7 @@ mod tests {
                                         800.0,
                                     ),
                                 ),
+                                direct_scanout_passthrough: None,
                             },
                         ),
                         mode: Some(
@@ -1535,6 +1536,7 @@ mod tests {
                     b: 0.25,
                     a: 1.0,
                 },
+                inactive_dim: None,
             },
             prefer_no_csd: true,
             cursor: Cursor {
@@ -1924,6 +1926,8 @@ mod tests {
                     },
                     draw_border_with_background: None,
                     opacity: None,
+                    inactive_dim: None,
+                    hdr_direct_scanout_passthrough: None,
                     geometry_corner_radius: None,
                     clip_to_geometry: None,
                     baba_is_float: None,

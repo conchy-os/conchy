@@ -273,6 +273,10 @@ layout {
         // top 64
         // bottom 64
     }
+
+    // Dim inactive windows/columns to save power and protect against burn-in on OLED displays.
+    // Value from 0.0 (no dimming) to 1.0 (pure black / turns off OLED subpixels completely).
+    // inactive-dim 0.3
 }
 
 // Add lines like this to spawn processes at startup.

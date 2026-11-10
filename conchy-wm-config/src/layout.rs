@@ -25,6 +25,7 @@ pub struct Layout {
     pub gaps: f64,
     pub struts: Struts,
     pub background_color: Color,
+    pub inactive_dim: Option<f32>,
 }
 
 impl Default for Layout {
@@ -54,6 +55,7 @@ impl Default for Layout {
                 PresetSize::Proportion(2. / 3.),
             ],
             background_color: DEFAULT_BACKGROUND_COLOR,
+            inactive_dim: None,
         }
     }
 }
@@ -82,6 +84,8 @@ impl MergeWith<LayoutPart> for Layout {
             struts,
             background_color,
         );
+
+        merge_clone_opt!((self, part), inactive_dim);
 
         if let Some(x) = part.default_column_width {
             self.default_column_width = x.0;
@@ -131,6 +135,8 @@ pub struct LayoutPart {
     pub struts: Option<Struts>,
     #[knuffel(child)]
     pub background_color: Option<Color>,
+    #[knuffel(child, unwrap(argument))]
+    pub inactive_dim: Option<f32>,
 }
 
 #[derive(knuffel::Decode, Debug, Clone, Copy, PartialEq)]
