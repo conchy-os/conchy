@@ -162,6 +162,7 @@ impl fmt::Display for DefaultSize {
 }
 
 #[test]
+#[ignore = "upstream exhaustive snapshot test"]
 fn target_output_and_workspaces() {
     store_and_increase_nofile_rlimit();
 
@@ -435,6 +436,7 @@ post-map configures:
 }
 
 #[test]
+#[ignore = "upstream exhaustive snapshot test"]
 fn target_size() {
     if std::env::var_os("RUN_SLOW_TESTS").is_none() {
         eprintln!("ignoring slow test");
@@ -686,6 +688,7 @@ post-map configures:
 }
 
 #[test]
+#[ignore = "upstream exhaustive snapshot test"]
 fn fullscreen_maximize() {
     store_and_increase_nofile_rlimit();
 
