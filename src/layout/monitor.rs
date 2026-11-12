@@ -149,6 +149,9 @@ pub(super) struct InsertHint {
     pub workspace: InsertWorkspace,
     pub position: InsertPosition,
     pub corner_radius: CornerRadius,
+    /// Column width the dragged window will have if inserted as a new column.
+    pub width: ColumnWidth,
+    pub is_full_width: bool,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -1147,7 +1150,9 @@ impl<W: LayoutElement> Monitor<W> {
                 InsertWorkspace::Existing(ws_id) => {
                     if let Some(idx) = self.idx_of_ws(ws_id) {
                         let ws = &self.workspaces[idx];
-                        if let Some(mut area) = ws.insert_hint_area(hint.position) {
+                        if let Some(mut area) =
+                            ws.insert_hint_area(hint.position, hint.width, hint.is_full_width)
+                        {
                             let scale = ws.scale().fractional_scale();
                             let view_size = ws.view_size();
 

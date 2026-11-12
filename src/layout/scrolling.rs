@@ -2830,41 +2830,71 @@ impl<W: LayoutElement> ScrollingSpace<W> {
         )
     }
 
+    /// Computes the tile height that a new auto-height tile would get when inserted into a column
+    /// at `tile_idx`, along with the cross-axis offset of its top edge, assuming no min/max size
+    /// constraints.
+    fn new_tile_cross_span_and_offset(
+        col: &Column<W>,
+        tile_idx: usize,
+        gaps: f64,
+        working_h: f64,
+    ) -> (f64, f64) {
+        let count = col.tiles.len() + 1;
+        let mut span_left = working_h - gaps * (count + 1) as f64;
+        let mut total_weight = 1.;
+        for data in &col.data {
+            match data.height {
+                WindowHeight::Auto { weight } => total_weight += weight,
+                _ => span_left -= data.size.h,
+            }
+        }
+        let span_left = span_left.max(1.);
+
+        let new_span = span_left / total_weight;
+        let mut y = col.tiles_origin().y;
+        for data in &col.data[..tile_idx] {
+            let span = match data.height {
+                WindowHeight::Auto { weight } => span_left * weight / total_weight,
+                _ => data.size.h,
+            };
+            y += span + gaps;
+        }
+
+        (new_span, y)
+    }
+
     pub(super) fn insert_hint_area(
         &self,
         position: InsertPosition,
+        width: ColumnWidth,
+        is_full_width: bool,
     ) -> Option<Rectangle<f64, Logical>> {
+        let gaps = self.options.layout.gaps;
+        let new_col_width = match if is_full_width {
+            ColumnWidth::Proportion(1.)
+        } else {
+            width
+        } {
+            ColumnWidth::Proportion(proportion) => {
+                (self.working_area.size.w - gaps) * proportion - gaps
+            }
+            ColumnWidth::Fixed(width) => width,
+        };
+
         let mut hint_area = match position {
             InsertPosition::NewColumn(column_index) => {
-                if column_index == 0 || column_index == self.columns.len() {
-                    let size = Size::from((
-                        300.,
-                        self.working_area.size.h - self.options.layout.gaps * 2.,
-                    ));
-                    let mut loc = Point::from((
-                        self.column_main_pos(column_index),
-                        self.working_area.loc.y + self.options.layout.gaps,
-                    ));
-                    if column_index == 0 && !self.columns.is_empty() {
-                        loc.x -= size.w + self.options.layout.gaps;
-                    }
-                    Rectangle::new(loc, size)
-                } else if column_index > self.columns.len() {
+                if column_index > self.columns.len() {
                     error!("insert hint column index is out of range");
                     return None;
-                } else {
-                    let size = Size::from((
-                        300.,
-                        self.working_area.size.h - self.options.layout.gaps * 2.,
-                    ));
-                    let loc = Point::from((
-                        self.column_main_pos(column_index)
-                            - size.w / 2.
-                            - self.options.layout.gaps / 2.,
-                        self.working_area.loc.y + self.options.layout.gaps,
-                    ));
-                    Rectangle::new(loc, size)
                 }
+
+                let size = Size::from((new_col_width, self.working_area.size.h - gaps * 2.));
+                // The new column will take this column's place, pushing the rest aside.
+                let loc = Point::from((
+                    self.column_main_pos(column_index),
+                    self.working_area.loc.y + gaps,
+                ));
+                Rectangle::new(loc, size)
             }
             InsertPosition::InColumn(column_index, tile_index) => {
                 if column_index > self.columns.len() {
@@ -2892,15 +2922,15 @@ impl<W: LayoutElement> ScrollingSpace<W> {
                         (150., bottom - 150.)
                     }
                 } else {
-                    let top = col.tile_offset(tile_index).y;
-
-                    if tile_index == 0 {
-                        (150., top)
-                    } else if tile_index == col.tiles.len() {
-                        (150., top - self.options.layout.gaps - 150.)
-                    } else {
-                        (300., top - self.options.layout.gaps / 2. - 150.)
-                    }
+                    // The new tile takes its share of the column height, like it will after
+                    // the drop.
+                    let (height, y) = Self::new_tile_cross_span_and_offset(
+                        col,
+                        tile_index,
+                        gaps,
+                        self.working_area.size.h,
+                    );
+                    (height, y)
                 };
 
                 let origin_x = col.tiles_origin().x;

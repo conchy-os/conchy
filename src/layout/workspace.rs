@@ -2002,8 +2002,11 @@ impl<W: LayoutElement> Workspace<W> {
     pub(super) fn insert_hint_area(
         &self,
         position: InsertPosition,
+        width: ColumnWidth,
+        is_full_width: bool,
     ) -> Option<Rectangle<f64, Logical>> {
-        self.scrolling.insert_hint_area(position)
+        self.scrolling
+            .insert_hint_area(position, width, is_full_width)
     }
 
     pub fn view_offset_gesture_begin(&mut self, is_touchpad: bool) {

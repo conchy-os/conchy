@@ -3196,6 +3196,8 @@ impl<W: LayoutElement> Layout<W> {
                         workspace: insert_ws,
                         position,
                         corner_radius,
+                        width: move_.width,
+                        is_full_width: move_.is_full_width,
                     });
                 }
                 InsertWorkspace::NewAt(_) => {
@@ -3208,6 +3210,8 @@ impl<W: LayoutElement> Layout<W> {
                         workspace: insert_ws,
                         position,
                         corner_radius: CornerRadius::default(),
+                        width: move_.width,
+                        is_full_width: move_.is_full_width,
                     });
                 }
             }
